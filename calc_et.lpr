@@ -11,7 +11,7 @@ uses
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, et_Main, et_math, MGlobal, MRoots, MFunc, et_Global, et_File, MMatrix,
-  et_Objects, et_Info;
+  et_Objects, et_Info, ed_sim;
 
 {$R *.res}
 

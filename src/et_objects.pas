@@ -25,7 +25,7 @@ type
     GenByBkscEl: Boolean;
   END;
 
-  TEGun = class
+  TElectronSource = class
     Energy      : float;
     Axis        : TVector3;
     theta       : float;
@@ -151,19 +151,19 @@ type
   TTrajectoryProc  = procedure(Trajectory: TMatrix);
 
 const
-  Analyzer        : TAnalyzer = nil;
-  EGun            : TEgun     = nil;
-  DetectProc      : Pointer   = nil;
-  CancelTraceFunc : Pointer   = nil;
-  SaveProc        : Pointer   = nil;
-  TrajProc        : Pointer   = nil;
-  Substrate       : TMaterial = nil;
-  Layer           : TMaterial = nil;
-  Sample          : TSample   = nil;
+  Analyzer        : TAnalyzer       = nil;
+  ElectronSource  : TElectronSource = nil;
+  DetectProc      : Pointer         = nil;
+  CancelTraceFunc : Pointer         = nil;
+  SaveProc        : Pointer         = nil;
+  TrajProc        : Pointer         = nil;
+  Substrate       : TMaterial       = nil;
+  Layer           : TMaterial       = nil;
+  Sample          : TSample         = nil;
 
 function GetElementName(Z: float; AllowSubscripts: Boolean): String;
 
-function  GetAtomsPerMolecule(Z: float): INTEGER;
+function GetAtomsPerMolecule(Z: float): Integer;
 
 function GetConcentration(Z: float): float;
 
@@ -270,7 +270,7 @@ end;
 
 
 (****************************************************************************)
-(*                                   TEGun                                  *)
+(*                                   TElectronSource                                  *)
 (* ------------------------------------------------------------------------ *)
 (* The electron gun: The constructor defines the geometrical relations      *)
 (* (Orientation with respect to the sample, hitting point of the beam,      *)
@@ -284,7 +284,7 @@ end;
   the left, as seen in a top view of the sample).
   <E> is the electron energy in keV.
   The coordinate system is defined by the sample. }
-constructor TEGun.Create(PolarAngle, E, BeamDiam: float; Focus: TVector3);
+constructor TElectronSource.Create(PolarAngle, E, BeamDiam: float; Focus: TVector3);
 begin
   inherited Create;
   theta := DegToRad(PolarAngle);
@@ -295,7 +295,7 @@ begin
   Fired  := 0;
 end;
 
-destructor TEGun.Destroy;
+destructor TElectronSource.Destroy;
 begin
   inherited;
 end;
@@ -303,7 +303,7 @@ end;
 { Creates an electron which hits the sample at point <Focus> with a
   normal distribution of width 2*BeamR.
   The coordinates of the <Ray> refer to the sample. }
-procedure TEGun.GenEl(var Electron: TElectron; var E: float);
+procedure TElectronSource.GenEl(var Electron: TElectron; var E: float);
 var
   r, phi: float;
   V: TVector3;
@@ -628,7 +628,7 @@ const
 begin
   if (Layer = nil) or (Substrate = nil) then
     raise Exception.Create('[TSample.Create] Materials have not been initialized.');
-  if (Egun = nil) then
+  if (ElectronSource = nil) then
     raise Exception.Create('[TSample.Create]: EGun has not been initialized.');
 
   zInterface := -abs(theLayerThickness);
@@ -640,7 +640,7 @@ begin
     ChangeMaterial(Layer);
 
   with Substrate do
-    IntensFact := 1.0 / (ElemDensity * EscapeDepth * CalcAugerCrossSection(Egun.Energy));
+    IntensFact := 1.0 / (ElemDensity * EscapeDepth * CalcAugerCrossSection(ElectronSource.Energy));
 
   { Every detected Auger electrons adds the amount
            Intensfact * AugerCrossSctn * EscapeDepth
@@ -681,7 +681,7 @@ begin
   if NewMaterial <> Material then
   begin
     Material := NewMaterial;
-    Material.RutherfordScattParams(EGun.Energy, sigma, alpha);
+    Material.RutherfordScattParams(ElectronSource.Energy, sigma, alpha);
     MaxStepLen := -1E4 / (Material.NumDensity * sigma) * Ln(0.001);
       { 1E4 to account for conversion from cm (sigma, NumDensity) to µm }
   end;
@@ -881,7 +881,7 @@ begin
         if LessThan(Point.Z, zInterface, FloatEps) or Equal(Point.Z,zInterface, FloatEps) then
           ChangeMaterial(Substrate);
 
-        AugerEl.GenByBkScEl := LessThan(E, Egun.Energy, FloatEps);
+        AugerEl.GenByBkScEl := LessThan(E, ElectronSource.Energy, FloatEps);
         if EmitAugerEl(Point, E, AugerEl) then
           Analyzer.Detect(AugerEl);
         if not OnlyDirect then

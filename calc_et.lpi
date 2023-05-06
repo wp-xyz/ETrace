@@ -12,7 +12,6 @@
       <XPManifest>
         <DpiAware Value="True"/>
       </XPManifest>
-      <Icon Value="0"/>
     </General>
     <BuildModes>
       <Item Name="Default" Default="True"/>
@@ -86,6 +85,10 @@
         <Filename Value="src\et_info.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="et_Info"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\ed_sim.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
   </ProjectOptions>

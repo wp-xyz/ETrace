@@ -196,7 +196,7 @@ end;
 
 procedure TForm1.DoneObjs;
 begin
-  FreeAndNil(EGun);
+  FreeAndNil(ElectronSource);
   FreeAndNil(Analyzer);
   FreeAndNil(Sample);
 end;
@@ -239,7 +239,7 @@ begin
     Materials.Free;
   end;
 
-  EGun := TEGun.Create(TiltAngle, PrimEnergy, BeamDiam, Focus);
+  ElectronSource := TElectronSource.Create(TiltAngle, PrimEnergy, BeamDiam, Focus);
   Analyzer := TAnalyzer.Create(AnalyzerType, TiltAngle, 0.0);
   Analyzer.HoeslerAp := HoeslerAperture;
   if not Zero(SectorStart, FloatEps) and not Zero(SectorEnd, FloatEps) then
@@ -374,7 +374,7 @@ begin
   begin
     inc(nPrim);
     //WritePrimEl(nPrim);
-    EGun.GenEl(electron, energy);
+    ElectronSource.GenEl(electron, energy);
     Trace(nPrim, 0, electron, energy);
   end;
 end;
@@ -382,9 +382,7 @@ end;
 procedure TForm1.SaveParams;
 var
   cfg: TCustomIniFile;
-  topo: Word;
   s: String;
-  ans: String;
   section: String;
   savedFormatSettings: TFormatSettings;
 begin
@@ -394,6 +392,7 @@ begin
     FormatSettings.DecimalSeparator := '.';
 
     section := 'Params';
+    cfg.EraseSection(section);
     cfg.WriteInteger(section, 'Iterations', MaxEl);
     cfg.WriteFloat(section, 'Tilt angle', TiltAngle);
     cfg.WriteFloat(section, 'Primary energy', PrimEnergy);

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="12"/>
+    <PathDelim Value="\"/>
+    <General>
+      <SessionStorage Value="InProjectDir"/>
+      <Title Value="calc_et"/>
+      <Scaled Value="True"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <XPManifest>
+        <DpiAware Value="True"/>
+      </XPManifest>
+      <Icon Value="0"/>
+    </General>
+    <BuildModes>
+      <Item Name="Default" Default="True"/>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+    <RunParams>
+      <FormatVersion Value="2"/>
+    </RunParams>
+    <RequiredPackages>
+      <Item>
+        <PackageName Value="LCL"/>
+      </Item>
+    </RequiredPackages>
+    <Units>
+      <Unit>
+        <Filename Value="calc_et.lpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\et_main.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="et_Main"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\et_math.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="et_Math"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\MathUnits\mglobal.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MGlobal"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\MathUnits\mroots.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MRoots"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\MathUnits\mfunc.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MFunc"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\et_global.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="et_Global"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\et_file.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="et_File"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\MathUnits\mmatrix.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="MMatrix"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\et_objects.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="et_Objects"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\et_info.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="et_Info"/>
+      </Unit>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="calc_et"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="src;src\MathUnits"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf3"/>
+      </Debugging>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
+    </Linking>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions>
+      <Item>
+        <Name Value="EAbort"/>
+      </Item>
+      <Item>
+        <Name Value="ECodetoolError"/>
+      </Item>
+      <Item>
+        <Name Value="EFOpenError"/>
+      </Item>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

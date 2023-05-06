@@ -82,26 +82,26 @@ begin
   Tol := Tol + Tol + EscDepth;
   with Point do
   begin
-    case Topography of
-      ttContHole :
+    case SimParams.Topography of
+      ttContactHole :
         if Equal(Z, 0.0, Tol) then
         begin
-          R2 := Sqr(0.5*Width);
+          R2 := Sqr(0.5 * SimParams.Width);
           if LessThan(X*X + Y*Y, R2, Tol) then
             BottomIntens := BottomIntens + dI
           else
             TopIntens := TopIntens + dI;
         end else
-        if Equal(Z, -Depth, Tol) then
+        if Equal(Z, -SimParams.Depth, Tol) then
           BottomIntens := BottomIntens + dI
         else
           WallIntens := WallIntens + dI;
 
       ttStripe :
-        if Zero(Z, Tol) and Zero(X, Width*0.5) then
+        if Zero(Z, Tol) and Zero(X, SimParams.Width*0.5) then
           TopIntens := TopIntens + dI
         else
-        if Equal(Z, -Depth, Tol) and not Zero(X, Width*0.5) then
+        if Equal(Z, -SimParams.Depth, Tol) and not Zero(X, SimParams.Width*0.5) then
           BottomIntens := BottomIntens + dI
         else
           WallIntens := WallIntens + dI;
@@ -111,13 +111,13 @@ begin
           WallIntens := WallIntens + dI
         else
         if GreaterThan(X, 0.0, Tol) then
-          case StepDir of
+          case SimParams.StepDir of
             sdUp   : TopIntens := TopIntens + dI;
             sdDown : BottomIntens := BottomIntens + dI;
           end
         else
         if LessThan(X, 0.0, Tol) then
-          case StepDir of
+          case SimParams.StepDir of
             sdUp   : BottomIntens := BottomIntens + dI;
             sdDown : TopIntens := TopIntens + dI;
           end;
@@ -204,11 +204,11 @@ end;
 procedure TForm1.GUIToParams;
 begin
   MaxEl := sePrimElCount.Value;
-  PrimEnergy := sePrimEnergy.Value;
-  BeamDiam := seBeamDiam.Value;
-  Focus.X := seFocusX.Value;
-  Focus.Y := seFocusY.Value;
-  Focus.Z := seFocusZ.Value;
+  SimParams.PrimaryEnergy := sePrimEnergy.Value;
+  SimParams.BeamDiameter := seBeamDiam.Value;
+  SimParams.Focus.X := seFocusX.Value;
+  SimParams.Focus.Y := seFocusY.Value;
+  SimParams.Focus.Z := seFocusZ.Value;
 end;
 
 function TForm1.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -233,24 +233,27 @@ begin
 
   Materials := NewMaterialsList;
   try
-    Substrate := InitMaterial(Materials, SubstrateName);
-    Layer := InitMaterial(Materials, LayerName);
+    Substrate := InitMaterial(Materials, SimParams.SubstrateName);
+    Layer := InitMaterial(Materials, SimParams.LayerName);
   finally
     Materials.Free;
   end;
 
-  ElectronSource := TElectronSource.Create(TiltAngle, PrimEnergy, BeamDiam, Focus);
-  Analyzer := TAnalyzer.Create(AnalyzerType, TiltAngle, 0.0);
-  Analyzer.HoeslerAp := HoeslerAperture;
-  if not Zero(SectorStart, FloatEps) and not Zero(SectorEnd, FloatEps) then
-    Analyzer.Restrict(SectorStart, SectorEnd);
+  ElectronSource := TElectronSource.Create(SimParams.TiltAngle, SimParams.PrimaryEnergy, SimParams.BeamDiameter, SimParams.Focus);
+  Analyzer := TAnalyzer.Create(SimParams.AnalyzerType, SimParams.TiltAngle, 0.0);
+  Analyzer.HoeslerAp := SimParams.UseHoeslerAperture;
+  if not Zero(SimParams.SectorStart, FloatEps) and not Zero(SimParams.SectorEnd, FloatEps) then
+    Analyzer.Restrict(SimParams.SectorStart, SimParams.SectorEnd);
 
-  case Topography of
-    ttContHole : Sample := TContactHole.Create(LayerThickness, et_Global.Width*0.5, Depth, TraceFileName);
-    ttStripe   : Sample := TStripe.Create(LayerThickness, et_Global.Width, Depth, TraceFileName);
-    ttStep     : Sample := TStep.Create(LayerThickness, Depth, StepDir, TraceFileName);
+  case SimParams.Topography of
+    ttContactHole:
+      Sample := TContactHole.Create(SimParams.LayerThickness, SimParams.Width*0.5, SimParams.Depth, TraceFileName);
+    ttStripe:
+      Sample := TStripe.Create(SimParams.LayerThickness, SimParams.Width, SimParams.Depth, TraceFileName);
+    ttStep:
+      Sample := TStep.Create(SimParams.LayerThickness, SimParams.Depth, SimParams.StepDir, TraceFileName);
   end;
-  Sample.OnlyDirect := OnlyDirect;
+  Sample.OnlyDirect := SimParams.OnlyDirect;
 
   EscDepth   := MaxF(Layer.EscapeDepth, Substrate.EscapeDepth);
   DetectProc := @DetectMessageProc;
@@ -280,54 +283,54 @@ begin
 
     section := 'Params';
     MaxEl := cfg.ReadInteger(section, 'Iterations', MaxEl);
-    TiltAngle := cfg.ReadFloat(section, 'Tilt angle', TiltAngle);
-    PrimEnergy := cfg.ReadFloat(section, 'Primary energy', PrimEnergy);
-    BeamDiam := cfg.ReadFloat(section, 'Beam diameter', BeamDiam);
+    SimParams.TiltAngle := cfg.ReadFloat(section, 'Tilt angle', SimParams.TiltAngle);
+    SimParams.PrimaryEnergy := cfg.ReadFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
+    SimParams.BeamDiameter := cfg.ReadFloat(section, 'Beam diameter', SimParams.BeamDiameter);
     s := cfg.ReadString(section, 'Analyzer type', '');
     case Uppercase(s) of
-      'CMA', '': AnalyzerType := atCMA;
-      'CHA': AnalyzerType := atCHA;
-      else AnalyzerType := atNone;
+      'CMA', '': SimParams.AnalyzerType := atCMA;
+      'CHA': SimParams.AnalyzerType := atCHA;
+      else SimParams.AnalyzerType := atNone;
     end;
-    SectorStart := cfg.ReadFloat(section, 'Analyzer Aperture Min', SectorStart);
-    SectorEnd := cfg.ReadFloat(section, 'Analyzer Aperture Max', SectorEnd);
-    HoeslerAperture := cfg.ReadBool(section, 'Hoesler aperature', HoeslerAperture);
-    Focus.X := cfg.ReadFloat(section, 'Focus X', Focus.X);
-    Focus.Y := cfg.ReadFloat(section, 'Focus Y', Focus.Y);
-    Focus.Z := cfg.ReadFloat(section, 'Focus Z', Focus.Z);
+    SimParams.SectorStart := cfg.ReadFloat(section, 'Analyzer Aperture Min', SimParams.SectorStart);
+    SimParams.SectorEnd := cfg.ReadFloat(section, 'Analyzer Aperture Max', SimParams.SectorEnd);
+    SimParams.useHoeslerAperture := cfg.ReadBool(section, 'Hoesler aperature', SimParams.UseHoeslerAperture);
+    SimParams.Focus.X := cfg.ReadFloat(section, 'Focus X', SimParams.Focus.X);
+    SimParams.Focus.Y := cfg.ReadFloat(section, 'Focus Y', SimParams.Focus.Y);
+    SimParams.Focus.Z := cfg.ReadFloat(section, 'Focus Z', SimParams.Focus.Z);
     s := cfg.ReadString(section, 'Topography', '');
     case Uppercase(s) of
       '',
-      'CONTACT HOLE': Topography := ttContHole;
-      'STRIPE': Topography := ttStripe;
-      'STEP': Topography := ttStep;
-      else Topography := ttNone;
+      'CONTACT HOLE': SimParams.Topography := ttContactHole;
+      'STRIPE': SimParams.Topography := ttStripe;
+      'STEP': SimParams.Topography := ttStep;
+      else SimParams.Topography := ttNone;
     end;
-    case Topography of
-      ttContHole:
+    case SimParams.Topography of
+      ttContactHole:
         begin
-          et_Global.Width := cfg.ReadFloat(section, 'Contact hole diameter', et_Global.Width);
-          et_Global.Depth := cfg.ReadFloat(section, 'Contact hole depth', et_Global.Depth);
+          SimParams.Width := cfg.ReadFloat(section, 'Contact hole diameter', SimParams.Width);
+          SimParams.Depth := cfg.ReadFloat(section, 'Contact hole depth', SimParams.Depth);
         end;
       ttStripe:
         begin
-          et_Global.Width := cfg.ReadFloat(section, 'Stripe width', et_Global.Width);
-          et_Global.Depth := cfg.ReadFloat(section, 'Stripe height', et_Global.Depth);
+          SimParams.Width := cfg.ReadFloat(section, 'Stripe width', SimParams.Width);
+          SimParams.Depth := cfg.ReadFloat(section, 'Stripe height', SimParams.Depth);
         end;
       ttStep:
         begin
-          et_Global.Depth := cfg.ReadFloat(section, 'Step height', et_Global.Depth);
+          SimParams.Depth := cfg.ReadFloat(section, 'Step height', SimParams.Depth);
           s := cfg.ReadString(section, 'Step dir', '');
           case Uppercase(s) of
-            'UP', '': StepDir := sdUp;
-            'DOWN': StepDir := sdDown;
+            'UP', '': SimParams.StepDir := sdUp;
+            'DOWN': SimParams.StepDir := sdDown;
           end;
         end;
     end;
-    SubstrateName := cfg.ReadString(section, 'Substrate material', SubstrateName);
-    LayerName := cfg.ReadString(section, 'Layer material', LayerName);
-    LayerThickness := cfg.ReadFloat(section, 'LayerThickness', LayerThickness);
-    OnlyDirect := cfg.ReadBool(section, 'Only Direct', OnlyDirect);
+    SimParams.SubstrateName := cfg.ReadString(section, 'Substrate material', SimParams.SubstrateName);
+    SimParams.LayerName := cfg.ReadString(section, 'Layer material', SimParams.LayerName);
+    SimParams.LayerThickness := cfg.ReadFloat(section, 'LayerThickness', SimParams.LayerThickness);
+    SimParams.OnlyDirect := cfg.ReadBool(section, 'Only Direct', SimParams.OnlyDirect);
     TraceFileName := cfg.ReadString(section, 'Trajectory file name', TraceFileName);
     EmPtsFileName := cfg.ReadString(section, 'Emission points file name', EmPtsFileName)
 
@@ -355,11 +358,11 @@ end;
 procedure TForm1.ParamsToGUI;
 begin
   sePrimElCount.Value := MaxEl;
-  sePrimEnergy.Value := PrimEnergy;
-  seBeamDiam.Value := BeamDiam;
-  seFocusX.Value := Focus.X;
-  seFocusY.Value := Focus.Y;
-  seFocusZ.Value := Focus.Z;
+  sePrimEnergy.Value := SimParams.PrimaryEnergy;
+  seBeamDiam.Value := SimParams.BeamDiameter;
+  seFocusX.Value := SimParams.Focus.X;
+  seFocusY.Value := SimParams.Focus.Y;
+  seFocusZ.Value := SimParams.Focus.Z;
 end;
 
 procedure TForm1.RunSimulation;
@@ -394,43 +397,43 @@ begin
     section := 'Params';
     cfg.EraseSection(section);
     cfg.WriteInteger(section, 'Iterations', MaxEl);
-    cfg.WriteFloat(section, 'Tilt angle', TiltAngle);
-    cfg.WriteFloat(section, 'Primary energy', PrimEnergy);
-    cfg.WriteFloat(section, 'Beam diameter', BeamDiam);
-    case AnalyzerType of
+    cfg.WriteFloat(section, 'Tilt angle', SimParams.TiltAngle);
+    cfg.WriteFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
+    cfg.WriteFloat(section, 'Beam diameter', SimParams.BeamDiameter);
+    case SimParams.AnalyzerType of
       atCMA: s := 'CMA';
       atCHA: s := 'CHA';
       else   s := '';
     end;
     if s <> '' then cfg.WriteString(section, 'Analyzer type', s);
-    cfg.WriteFloat(section, 'Analyzer Aperture Min', SectorStart);
-    cfg.WriteFloat(section, 'Analyzer Aperture Max', SectorEnd);
-    cfg.WriteBool(section, 'Hoesler aperature', HoeslerAperture);
-    cfg.WriteFloat(section, 'Focus X', Focus.X);
-    cfg.WriteFloat(section, 'Focus Y', Focus.Y);
-    cfg.WriteFloat(section, 'Focus Z', Focus.Z);
-    case Topography of
-      ttContHole: s := 'Contact hole';
+    cfg.WriteFloat(section, 'Analyzer Aperture Min', SimParams.SectorStart);
+    cfg.WriteFloat(section, 'Analyzer Aperture Max', SimParams.SectorEnd);
+    cfg.WriteBool(section, 'Hoesler aperature', SimParams.UseHoeslerAperture);
+    cfg.WriteFloat(section, 'Focus X', SimParams.Focus.X);
+    cfg.WriteFloat(section, 'Focus Y', SimParams.Focus.Y);
+    cfg.WriteFloat(section, 'Focus Z', SimParams.Focus.Z);
+    case SimParams.Topography of
+      ttContactHole: s := 'Contact hole';
       ttStripe: s := 'Stripe';
       ttStep: s := 'Step';
       else s := '';
     end;
     if s <> '' then cfg.WriteString(section, 'Topography', s);
-    case Topography of
-      ttContHole:
+    case SimParams.Topography of
+      ttContactHole:
         begin
-          cfg.WriteFloat(section, 'Contact hole diameter', et_Global.Width);
-          cfg.WriteFloat(section, 'Contact hole depth', et_Global.Depth);
+          cfg.WriteFloat(section, 'Contact hole diameter', SimParams.Width);
+          cfg.WriteFloat(section, 'Contact hole depth', SimParams.Depth);
         end;
       ttStripe:
         begin
-          cfg.WriteFloat(section, 'Stripe width', et_Global.Width);
-          cfg.WriteFloat(section, 'Stripe height', et_Global.Depth);
+          cfg.WriteFloat(section, 'Stripe width', SimParams.Width);
+          cfg.WriteFloat(section, 'Stripe height', SimParams.Depth);
         end;
       ttStep:
         begin
-          cfg.WriteFloat(section, 'Step height', et_Global.Depth);
-          case StepDir of
+          cfg.WriteFloat(section, 'Step height', SimParams.Depth);
+          case SimParams.StepDir of
             sdUp: s := 'Up';
             sdDown: s := 'Down';
             else s := '';
@@ -438,10 +441,10 @@ begin
           if s <> '' then cfg.WriteString(section, 'Step dir', s);
         end;
     end;
-    cfg.WriteString(section, 'Substrate material', SubstrateName);
-    cfg.WriteString(section, 'Layer material', LayerName);
-    cfg.WriteFloat(section, 'LayerThickness', LayerThickness);
-    cfg.WriteBool(section, 'Only Direct', OnlyDirect);
+    cfg.WriteString(section, 'Substrate material', SimParams.SubstrateName);
+    cfg.WriteString(section, 'Layer material', SimParams.LayerName);
+    cfg.WriteFloat(section, 'LayerThickness', SimParams.LayerThickness);
+    cfg.WriteBool(section, 'Only Direct', SimParams.OnlyDirect);
     cfg.WriteString(section, 'Trajectory file name', TraceFileName);
     cfg.WriteString(section, 'Emission points file name', EmPtsFileName)
 

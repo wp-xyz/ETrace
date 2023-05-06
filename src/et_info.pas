@@ -104,7 +104,7 @@ var
 begin
   value := Info.GetValue(2,1);
   case Round(value) of
-    1  : Result := ttContHole;
+    1  : Result := ttContactHole;
     2  : Result := ttStripe;
     3  : Result := ttStep;
     else Result := ttNone;
@@ -129,7 +129,7 @@ end;
 
 function GetContHoleRadius(Info: TMatrix): float;
 begin
-  if GetTopoType(Info) = ttContHole then
+  if GetTopoType(Info) = ttContactHole then
     Result := Info.GetValue(5,1)
   else
     Result := mEmpty;
@@ -137,7 +137,7 @@ end;
 
 function GetContHoleDepth(Info: TMatrix): float;
 begin
-  if GetTopoType(Info) = ttContHole then
+  if GetTopoType(Info) = ttContactHole then
     Result := Info.GetValue(6,1)
   else
     Result := mEmpty;
@@ -218,7 +218,7 @@ var
 begin
   GetEgunAxis(Info, Axis);
   Normalize(Axis);
-  Result := VecAngle(Axis, zAxis);
+  Result := VecAngle(Axis, SimParams.zAxis);
 end;
 
 procedure GetEgunAxis(Info: TMatrix; var Axis: TVector3);
@@ -269,7 +269,7 @@ begin
   Axis.Y := Info.GetValue(24, 1);
   Axis.Z := Info.GetValue(25, 1);
   Normalize(Axis);
-  result := VecAngle(Axis, zAxis);
+  result := VecAngle(Axis, SimParams.zAxis);
 end;
 
 function GetHoeslerAperture(Info: TMatrix): boolean;

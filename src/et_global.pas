@@ -10,7 +10,7 @@ uses
 type
   TDataType = (dtNone, dtTraj, dtEmPts);
 
-  TTopoType = (ttNone, ttContHole, ttStripe, ttStep);
+  TTopoType = (ttNone, ttContactHole, ttStripe, ttStep);
 
   TAnalyzerType = (atNone, atCMA, atCHA);
 
@@ -69,9 +69,59 @@ const
 }
   SingleEps     = 1E-4;      { data are stored in single precision }
 
+type
+  TSimParams = record
+    // general
+    zAxis: TVector3;
+    // electron source
+    PrimaryEnergy: Float;             // keV
+    BeamDiameter: Float;              // µm
+    Focus: TVector3;                  // µm
+    // electron analyzer
+    AnalyzerType: TAnalyzerType;
+    SectorStart: Float;
+    SectorEnd: Float;
+    UseHoeslerAperture: Boolean;
+    OnlyDirect: Boolean;
+    // sample
+    SubstrateName: String;
+    LayerName: String;
+    Topography: TTopoType;
+    Width: Float;                     // µm
+    Depth: Float;                     // µm
+    LayerThickness: Float;            // µm
+    StepDir: TStepDir;
+    TiltAngle: Float;                 // degrees
+  end;
 
 const
-  DEFAULT_TiltAngle = 0.0;            // Degrees
+  DefaultSimParams: TSimParams = (
+    // general
+    zAxis: (X:0.0; Y:0.0; Z:1.0);
+    // electron source
+    PrimaryEnergy: 10.0;
+    BeamDiameter: 0.3;
+    Focus: (X:0.0; Y:0.0; Z:0.0);
+    // electron analyzer
+    AnalyzerType: atCMA;
+    SectorStart: 0.0;
+    Sectorend: 0.0;
+    UseHoeslerAperture: false;
+    OnlyDirect: false;
+    // sample
+    SubstrateName: 'Si';
+    LayerName: 'SiO2';
+    Topography: ttContactHole;
+    Width: 1.0;
+    Depth: 0.5;
+    LayerThickness: -999.0;
+    StepDir: sdUp;
+    TiltAngle: 0.0
+  );
+
+var
+  SimParams: TSimParams;
+             (*
   DEFAULT_Primenergy = 10.0;          // keV
   DEFAULT_BeamDiam = 0.3;             // µm
   DEFAULT_AnalyzerType = atCMA;
@@ -83,7 +133,7 @@ const
   DEFAULT_Width = 1.0;
   DEFAULT_Depth = 0.1;
   DEFAULT_StepDir = sdDown;
-  DEFAULT_Topography = ttContHole;
+  DEFAULT_Topography = ttContactHole;
   DEFAULT_LayerThickness = -999.0;    // <0 --> is equal to contact hole depth
   DEFAULT_SubstrateName = 'Si';
   DEFAULT_LayerName = 'SiO2';
@@ -111,7 +161,7 @@ var
   TplExt         : ExtStr        = '.TPL';
   TplBackupExt   : ExtStr        = '.BAK';
   CfgExt         : ExtStr        = '.CFG';
-
+     *)
 const
   CfgSignature   = 'ET-CFG';
   TplSignature   = 'ET-TPL';
@@ -140,23 +190,7 @@ end;
 
 procedure InitParams;
 begin
-  TiltAngle := DEFAULT_TiltAngle;
-  PrimEnergy := DEFAULT_PrimEnergy;
-  BeamDiam := DEFAULT_BeamDiam;
-  AnalyzerType := DEFAULT_AnalyzerType;
-  SectorStart := DEFAULT_SectorStart;
-  SectorEnd := DEFAULT_SectorEnd;
-  HoeslerAperture :=DEFAULT_HoeslerAperture;
-  zAxis := DEFAULT_zAxis;
-  Focus := DEFAULT_Focus;
-  Width := DEFAULT_Width;
-  Depth := DEFAULT_Depth;
-  StepDir := DEFAULT_StepDir;
-  Topography := DEFAULT_Topography;
-  LayerThickness := DEFAULT_LayerThickness;
-  SubstrateName := DEFAULT_SubstrateName;
-  LayerName := DEFAULT_LayerName;
-  OnlyDirect := DEFAULT_OnlyDirect;
+  SimParams := DefaultSimParams;
 end;
 
 initialization

@@ -373,7 +373,7 @@ begin
     { The following code implements the Hösler aperture: Electrons can reach
       the analyzer only if the emission angle with respect to the surface
       normal is > 80 degrees. }
-    if HoeslerAp and (VecAngle(Electron.Ray.Dir, zAxis) < DegToRad(80.0)) then
+    if HoeslerAp and (VecAngle(Electron.Ray.Dir, SimParams.zAxis) < DegToRad(80.0)) then
       Exit;
 
     { The following code is executed if the analyzer acceptance is restricted
@@ -796,7 +796,7 @@ begin
   SphToCart(Cos_theta, Sin_theta, Cos_phi, Sin_phi, Dir.X, Dir.Y, Dir.Z);
 
   { Angle between old direction and z axis }
-  psi := VecAngle(Electron.Ray.Dir, zAxis);
+  psi := VecAngle(Electron.Ray.Dir, SimParams.zAxis);
 
   if Equal(psi, Pi, 1E-5) then     { old direction is anti-parallel to z }
     VecMulSc(Dir, -1.0)
@@ -869,9 +869,9 @@ begin
         Save(Point, E, n);
         if Outside(Point) then
         begin
-          Ray := Electron.Ray;       { das Elektron hat die Probe verlassen }
-          VecMulSc(Ray.Dir, -1.0);   { -> Emissionspunkt feststellen        }
-          IF Intersection(Ray, P, FALSE) THEN Point := P;   {<<< war: TRUE >>> }
+          Ray := Electron.Ray;       // the electron has left the sample
+          VecMulSc(Ray.Dir, -1.0);   // Determine the point of emission
+          if Intersection(Ray, P, false) then Point := P;   {<<< was: TRUE >>> }
           Finished := true;
         end;
 
@@ -986,7 +986,7 @@ begin
   end;
 
   // Intersection with top plane (z = 0)
-  Plane.Dir := zAxis;
+  Plane.Dir := SimParams.zAxis;
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);
   dt := rayXplane(ray, Plane, Point);
   if (dt <> mEmpty) and GreaterThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
@@ -1166,7 +1166,7 @@ begin
   W  := Width*0.5;
 
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { Intersection at the top }
-  Plane.Dir := zAxis;
+  Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
   if (dt <> mEmpty) and (not Zero(Point.X, W)) then
     dt := mEmpty;
@@ -1313,7 +1313,7 @@ var
   dt,db,dw : Float;
 begin
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { Intersection at the top }
-  Plane.Dir := zAxis;
+  Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
   if (dt <> mEmpty) then
     case Dir of

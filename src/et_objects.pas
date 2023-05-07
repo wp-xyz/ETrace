@@ -65,25 +65,41 @@ type
   end;
 
   TMaterial = class
-    Z              : float;
-    A              : float;       { Atomic/moleculare mass }
-    MassDensity    : float;       { Density in g/cm3 }
-    NumDensity     : float;       { Density in atoms/cm3 }
-    ElemDensity    : float;       { at/cm3 of the element to be analyzed }
-    ScreeningParam : float;       { Screening paremter Alpha0 }
-    RutherfordParam: float;       { Pre-factor for Rutherford cross-section }
-    StoppingPowParam:float;       { Factor for stopping power }
-    J              : float;       { average ionization potential (keV) }
-    Eb             : float;       { Bindung energy of an electron shell (keV) }
-    AugerEnergy    : float;       { Auger energy, eV }
-    EscapeDepth    : float;       { Auger escape depth (µm) }
-    constructor Create(theZ, theMolecMass, theMassDensity, theCoreLevel,
-                  theAugerEnergy: float);
+  private
+    FA                  : float;       { Atomic/molecular mass A }
+    FAtomicNumber       : float;       { Z }
+    FAugerEnergy        : float;       { Auger energy, eV }
+    FCoreLevelEnergy    : float;       { Binding energy of an electron shell (keV) }
+    FElemDensity        : float;       { at/cm3 of the element to be analyzed }
+    FEscapeDepth        : float;       { Auger escape depth (µm) }
+    FIonizationPotential: Float;       { Average ionization potential J (keV) }
+    FMassDensity        : float;       { Density in g/cm3 }
+    FNumDensity         : float;       { Density in atoms/cm3 }
+    FRutherfordParam    : float;       { Pre-factor for Rutherford cross-section }
+    FScreeningParam     : float;       { Screening paremter Alpha0 }
+    FStoppingPowerParam : float;       { Factor for stopping power }
+  protected
     function CalcAugerCrossSection(E: float): float;
     function CalcAugerEscapeDepth(E: float): float;
     function CalcStoppingPower(E: float): float;
+  public
+    constructor Create(aAtomicNumber, aMolecMass, aMassDensity, aCoreLevelEnergy, aAugerEnergy: float);
     procedure InitParams;
     procedure RutherfordScattParams(E: float; var Sigma, Alpha: float);
+
+    property A: Float read FA;
+    property AtomicNumber: Float read FAtomicNumber;
+    property AugerEnergy: Float read FAugerEnergy;
+    property CoreLevelEnergy: Float read FCoreLevelEnergy;
+    property ElemDensity: float read FElemDensity;
+    property EscapeDepth: Float read FEscapeDepth;
+    property IonizationPotential: Float read FIonizationPotential;
+    property MassDensity: Float read FMassDensity;
+    property NumDensity: Float read FNumDensity;
+    property RutherfordParam: Float read FRutherfordParam;
+    property ScreeningParam: Float read FScreeningParam;
+    property StoppingPowerParam: Float read FStoppingPowerParam;
+    property Z: Float read FAtomicNumber;
   end;
 
   TSample = class
@@ -527,14 +543,14 @@ end;
 (* functions for the Monte-Carlo calculation.                               *)
 (****************************************************************************)
 
-constructor TMaterial.Create(theZ, theMolecMass, theMassDensity, theCoreLevel,
-  theAugerEnergy: float);
+constructor TMaterial.Create(aAtomicNumber, aMolecMass, aMassDensity, aCoreLevelEnergy,
+  aAugerEnergy: float);
 begin
-  Z := theZ;
-  A := theMolecMass;
-  Eb := theCoreLevel;
-  MassDensity := theMassDensity;
-  AugerEnergy := theAugerEnergy;
+  FAtomicNumber := aAtomicNumber;
+  FA := aMolecMass;
+  FCoreLevelEnergy := aCoreLevelEnergy;
+  FMassDensity := aMassDensity;
+  FAugerEnergy := aAugerEnergy;
   InitParams;
 end;
 
@@ -544,12 +560,12 @@ end;
   Eq. (11) in Ze-jun et al. SIA, 10, 253 (1987) }
 function TMaterial.CalcAugerCrossSection(E: float): float;
 begin
-  if E < Eb then
+  if E < CoreLevelEnergy then
     Result := 0.0
   else
     Result :=
-      1.0/(Eb*E) * Power((E-Eb)/(E+Eb), 1.5) *
-      (1.0 + TwoThirds * (1.0-Eb/(E+E)) * Ln(2.7 + Sqrt(E/Eb-1.0)) );
+      1.0/(CoreLevelEnergy*E) * Power((E-CoreLevelEnergy)/(E+CoreLevelEnergy), 1.5) *
+      (1.0 + TwoThirds * (1.0-CoreLevelEnergy/(E+E)) * Ln(2.7 + Sqrt(E/CoreLevelEnergy-1.0)) );
 end;
 
 { Calculates the escape depth (in µm) for an Auger electron having energy E
@@ -577,22 +593,22 @@ end;
   See Eli Napchan, p9 }
 function TMaterial.CalcStoppingPower(E: float): float;
 begin
-  Result := StoppingPowParam / E * Ln(1.166*E/J+1.0);
+  Result := StoppingPowerParam / E * Ln(1.166 * E/IonizationPotential + 1.0);
 end;
 
 procedure TMaterial.InitParams;
 begin
-  NumDensity := (Avogadro * MassDensity * GetAtomsPerMolecule(Z)) / A;
-  ElemDensity := NumDensity * GetConcentration(Z);
-  ScreeningParam := 3.4E-3 * Power(Z, TwoThirds);
-  RutherfordParam := 5.21E-21 * FourPi * Z * Z;
+  FNumDensity := (Avogadro * MassDensity * GetAtomsPerMolecule(Z)) / A;
+  FElemDensity := NumDensity * GetConcentration(Z);
+  FScreeningParam := 3.4E-3 * Power(Z, TwoThirds);
+  FRutherfordParam := 5.21E-21 * FourPi * Z * Z;
   if Z > 13 then
-    J := 9.76E-3*Z + 58.5E-3 * Power(Z,-0.19)
+    FIonizationPotential := 9.76E-3*Z + 58.5E-3 * Power(Z,-0.19)
   else
-    J := 11.5E-3 * Z;   { * 1E-3 for energy in keV }
-  StoppingPowParam := -7.85 * MassDensity * Z * GetAtomsPerMolecule(Z) / A;
+    FIonizationPotential := 11.5E-3 * Z;   { * 1E-3 for energy in keV }
+  FStoppingPowerParam := -7.85 * MassDensity * Z * GetAtomsPerMolecule(Z) / A;
     { Dropped 1E4 for conversion from cm to µm! }
-  EscapeDepth := CalcAugerEscapeDepth(AugerEnergy);
+  FEscapeDepth := CalcAugerEscapeDepth(AugerEnergy);
 end;
 
 

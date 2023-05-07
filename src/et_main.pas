@@ -5,16 +5,37 @@ unit et_Main;
 interface
 
 uses
-  Classes, SysUtils, StrUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, Spin, IniFiles,
+  // RTL, FCL
+  Classes, SysUtils, StrUtils, IniFiles,
+  // LCL
+  Forms, Controls, Graphics, Dialogs, StdCtrls,
+  Spin, ExtCtrls, ComCtrls,
+  // TAChart
+  TAGraph, TACustomSeries, TASeries, TASources,
+  // Math lib
   MGlobal, MFunc,
-  et_Global, et_Math, et_File, et_Objects, et_Info;
+  // project units
+  et_Global, et_Math, et_File, et_Objects, et_Info, et_Sim, TACustomSource;
 
 type
 
   { TForm1 }
 
   TForm1 = class(TForm)
-    Button1: TButton;
+    btnRunSim: TButton;
+    EmissionPointsSeries: TLineSeries;
+    Label2: TLabel;
+    ResultsPageControl: TPageControl;
+    PageControl2: TPageControl;
+    TrajectoryOptionsPanel: TPanel;
+    ParamsPanel: TPanel;
+    pgEmissionPoints: TTabSheet;
+    pgTrajectories: TTabSheet;
+    EmissionPointsMemo: TMemo;
+    seTrajectories: TSpinEdit;
+    pgPlot: TTabSheet;
+    pgValues: TTabSheet;
+    TrajectoriesChart: TChart;
     ComboBox1: TComboBox;
     gbAnalyzer: TGroupBox;
     Label1: TLabel;
@@ -22,7 +43,7 @@ type
     lblFocusX: TLabel;
     lblFocusY: TLabel;
     lblFocusZ: TLabel;
-    ResultsMemo: TMemo;
+    rgProjection: TRadioGroup;
     seFocusX: TFloatSpinEdit;
     seFocusY: TFloatSpinEdit;
     seFocusZ: TFloatSpinEdit;
@@ -32,22 +53,39 @@ type
     sePrimElCount: TSpinEdit;
     lblPrimEnergy: TLabel;
     seBeamDiam: TFloatSpinEdit;
+    EmissionPointsChart: TChart;
+    EmissionPointsSource: TUserDefinedChartSource;
     procedure Button1Click(Sender: TObject);
+    procedure btnRunSimClick(Sender: TObject);
+    procedure EmissionPointsSourceGetChartDataItem(
+      ASource: TUserDefinedChartSource; AIndex: Integer;
+      var AItem: TChartDataItem);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure rgProjectionClick(Sender: TObject);
+    procedure TrajectoryGetChartDataItemHandler(ASource: TUserDefinedChartSource;
+      AIndex: Integer; var AItem: TChartDataItem);
   private
     nPrim: Integer;
     TraceFileName: String;
     EmPtsFileName: String;
-    procedure DoneObjs;
-    procedure GUIToParams;
+    FEmissionPoints: array of TVector3;
+    FTrajectories: array of TTrajectory;
+    function GetProjection: TProjection;
+    procedure GUIToParams(var AParams: TSimParams);
     function InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
-    procedure InitObjs;
     procedure InitParams;
-    procedure ParamsToGUI;
+    procedure ParamsToGUI(const AParams: TSimParams);
+    procedure PrepareSim;
     procedure RunSimulation;
     procedure SaveParams;
     procedure Trace(prim, sec: Integer; Electron: TElectron; Energy: float);
+
+    // Event handlers
+    procedure DetectionHandler(Simulation: TSimulation;
+      AElectronCount: Integer; const AElectron: TAugerElectron);
+    procedure TrajectoryCompleteHandler(Simulation: TSimulation;
+      const AElectronID: String; const ATrajectory: TTrajectory);
 
   public
 
@@ -60,6 +98,9 @@ implementation
 
 {$R *.lfm}
 
+const
+  TITLE_MASK = '%7s %9s %9s %9s %12s %12s %12s %6s';
+  VALUE_MASK = '%7d %9.3f %9.3f %9.3f %12.*f %12.*f %12.*f %6s';
 var
   MaxEl: Integer = 100;  // Number of iterations
   BottomIntens: Float = 0.0;
@@ -73,35 +114,39 @@ var
   EmPtsFileName: String = '';
   Aborted: Boolean = false;
 
-procedure EvalIntensities(Point: TVector3; dI: Float);
+procedure EvalIntensities(const ASimParams: TSimParams; EscDepth: Float;
+  Point: TVector3; dI: Float; var TopIntens, BottomIntens, WallIntens: Float);
 var
   R2: Float;
   Tol: Float;
 begin
+  Tol := 6 * EscDepth;
+  {
   Tol := EscDepth + EscDepth;
   Tol := Tol + Tol + EscDepth;
+  }
   with Point do
   begin
-    case SimParams.Topography of
+    case ASimParams.Topography of
       ttContactHole :
         if Equal(Z, 0.0, Tol) then
         begin
-          R2 := Sqr(0.5 * SimParams.Width);
+          R2 := Sqr(0.5 * ASimParams.Width);
           if LessThan(X*X + Y*Y, R2, Tol) then
             BottomIntens := BottomIntens + dI
           else
             TopIntens := TopIntens + dI;
         end else
-        if Equal(Z, -SimParams.Depth, Tol) then
+        if Equal(Z, -ASimParams.Depth, Tol) then
           BottomIntens := BottomIntens + dI
         else
           WallIntens := WallIntens + dI;
 
       ttStripe :
-        if Zero(Z, Tol) and Zero(X, SimParams.Width*0.5) then
+        if Zero(Z, Tol) and Zero(X, ASimParams.Width*0.5) then
           TopIntens := TopIntens + dI
         else
-        if Equal(Z, -SimParams.Depth, Tol) and not Zero(X, SimParams.Width*0.5) then
+        if Equal(Z, -ASimParams.Depth, Tol) and not Zero(X, ASimParams.Width*0.5) then
           BottomIntens := BottomIntens + dI
         else
           WallIntens := WallIntens + dI;
@@ -111,13 +156,13 @@ begin
           WallIntens := WallIntens + dI
         else
         if GreaterThan(X, 0.0, Tol) then
-          case SimParams.StepDir of
+          case ASimParams.StepDir of
             sdUp   : TopIntens := TopIntens + dI;
             sdDown : BottomIntens := BottomIntens + dI;
           end
         else
         if LessThan(X, 0.0, Tol) then
-          case SimParams.StepDir of
+          case ASimParams.StepDir of
             sdUp   : BottomIntens := BottomIntens + dI;
             sdDown : TopIntens := TopIntens + dI;
           end;
@@ -125,54 +170,6 @@ begin
   end;
 end;
 
-procedure DetectMessageProc(nr: LongInt; var Electron: TAugerElectron);
-var
-  Backsc: String[1];
-  Decs: Byte;
-  MaxIntens: Float;
-begin
-  with Electron do
-  begin
-    EvalIntensities(Ray.Point, Weight);
-    if GenByBkScEl then
-      Backsc :='X'
-    else
-      BackSc := ' ';
-    MaxIntens := MaxF(BottomIntens, MaxF(TopIntens, WallIntens));
-    nr := nr + nDetOld;
-    (*
-    IF Graphik THEN BEGIN
-      IF EmPtFName<>'' THEN BEGIN
-        WriteToGraphWindow(PlotWindow);
-        WITH Ray.Point DO DrawEmPoint(X,Y,Z);
-      END;
-      Decs := 3;
-      WriteToGraphWindow(GrResultWindow);
-      MoveRel(TextWidth('detekt.Ereignisse: '),0);
-      OutLn(RightStr(DecStr(nr), 10));
-      OutLn(RightStr(FixedFloatStr(TopInt,Decs),10));
-      OutLn(RightStr(FixedFloatStr(WallInt,Decs),10));
-      OutLn(RightStr(FixedFloatStr(BotInt,Decs),10));
-    END ELSE
-    *)
-    begin
-      if MaxIntens < 10 then Decs := 3 else
-        if MaxIntens < 100 then Decs := 2 else
-          if MaxIntens < 1000 then Decs := 1 else
-            Decs := 0;
-      with Ray.Point do
-        Form1.ResultsMemo.Lines.Add('%7d %9.3f %9.3f %9.3f %12.*f %12.*f %12.*f %6s', [
-          nr, X, Y, Z, decs, TopIntens, decs, WallIntens, decs, BottomIntens, BackSc])
-        {
-      WriteToTextWindow(AugerElWindow);
-      WITH Ray.Point DO
-        WriteLn(nr:7, X:9:3, Y:9:3, Z:9:3, TopInt:11:Decs, Wallint:12:Decs,
-          BotInt:12:Decs, Backsc:3);
-      SaveCursor(AugerElWindow);
-      }
-    end;
-  end;
-end;
 
 { TForm1 }
 
@@ -181,34 +178,90 @@ begin
   RunSimulation;
 end;
 
+procedure TForm1.btnRunSimClick(Sender: TObject);
+begin
+  RunSimulation;
+end;
+
+procedure TForm1.DetectionHandler(Simulation: TSimulation;
+  AElectronCount: Integer; const AElectron: TAugerElectron);
+const
+  CROSS: array[boolean] of String[1] = (' ', 'X');
+var
+  Decs: Byte;
+  MaxIntens: Float;
+begin
+  SetLength(FEmissionPoints, Length(FEmissionPoints) + 1);
+  FEmissionPoints[High(FEmissionPoints)] := AElectron.Ray.Point;
+
+  EmissionPointsSource.PointsNumber := Length(FEmissionPoints);
+
+  with AElectron do
+  begin
+    EvalIntensities(SimParams, EscDepth, Ray.Point, Weight, TopIntens, BottomIntens, WallIntens);
+    MaxIntens := MaxF(BottomIntens, MaxF(TopIntens, WallIntens));
+    if MaxIntens < 10 then Decs := 3 else
+      if MaxIntens < 100 then Decs := 2 else
+        if MaxIntens < 1000 then Decs := 1 else
+          Decs := 0;
+    with Ray.Point do
+      EmissionPointsMemo.Lines.Add(VALUE_MASK, [
+        AElectronCount, X, Y, Z, decs, TopIntens, decs, WallIntens, decs, BottomIntens, CROSS[GenByBkScEl]
+      ]);
+  end;
+end;
+
+procedure TForm1.EmissionPointsSourceGetChartDataItem(
+  ASource: TUserDefinedChartSource; AIndex: Integer; var AItem: TChartDataItem);
+begin
+  AItem.X := FEmissionPoints[AIndex].X;
+  AItem.Y := FEmissionPoints[AIndex].Y;
+end;
+
 procedure TForm1.FormCreate(Sender: TObject);
 begin
   InitParams;
-  ParamsToGui;
+  ParamsToGui(SimParams);
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
-  GuiToParams;
+  GuiToParams(SimParams);
   SaveParams;
-  DoneObjs;
 end;
 
-procedure TForm1.DoneObjs;
+function TForm1.GetProjection: TProjection;
 begin
-  FreeAndNil(ElectronSource);
-  FreeAndNil(Analyzer);
-  FreeAndNil(Sample);
+  Result := TProjection(rgProjection.ItemIndex);
 end;
 
-procedure TForm1.GUIToParams;
+procedure TForm1.rgProjectionClick(Sender: TObject);
+const
+  TITLE_X: array[TProjection] of String = ('X', 'X', 'Y', '3D');
+  TITLE_Y: array[TProjection] of String = ('Y', 'Z', 'Z', '3D');
+var
+  i: Integer;
+  ser: TChartSeries;
+begin
+  for i := 0 to TrajectoriesChart.SeriesCount-1 do
+    if (TrajectoriesChart.Series[i] is TChartSeries) then
+    begin
+      ser := TChartSeries(TrajectoriesChart.Series[i]);
+      if ser.Source is TUserDefinedChartSource then
+        TUserDefinedChartSource(ser.Source).Reset;
+    end;
+  TrajectoriesChart.LeftAxis.Title.Caption := TITLE_Y[GetProjection];
+  TrajectoriesChart.BottomAxis.Title.Caption := TITLE_X[GetProjection];
+end;
+
+procedure TForm1.GUIToParams(var AParams: TSimParams);
 begin
   MaxEl := sePrimElCount.Value;
-  SimParams.PrimaryEnergy := sePrimEnergy.Value;
-  SimParams.BeamDiameter := seBeamDiam.Value;
-  SimParams.Focus.X := seFocusX.Value;
-  SimParams.Focus.Y := seFocusY.Value;
-  SimParams.Focus.Z := seFocusZ.Value;
+  AParams.PrimaryEnergy := sePrimEnergy.Value;
+  AParams.BeamDiameter := seBeamDiam.Value;
+  AParams.Focus.X := seFocusX.Value;
+  AParams.Focus.Y := seFocusY.Value;
+  AParams.Focus.Z := seFocusZ.Value;
 end;
 
 function TForm1.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -220,53 +273,6 @@ begin
     raise Exception.Create('Unknown material ' + AName);
   with P do
     Result := TMaterial.Create(Z, A, Massdensity, CoreLevel, AugerEnergy);
-end;
-
-procedure TForm1.InitObjs;
-const
-  MASK = '%7s %9s %9s %9s %12s %12s %12s %6s';
-var
-  Materials: TMaterialsList;
-  s6, s7, s9, s12: String;
-begin
-  DoneObjs;
-
-  Materials := NewMaterialsList;
-  try
-    Substrate := InitMaterial(Materials, SimParams.SubstrateName);
-    Layer := InitMaterial(Materials, SimParams.LayerName);
-  finally
-    Materials.Free;
-  end;
-
-  ElectronSource := TElectronSource.Create(SimParams.TiltAngle, SimParams.PrimaryEnergy, SimParams.BeamDiameter, SimParams.Focus);
-  Analyzer := TAnalyzer.Create(SimParams.AnalyzerType, SimParams.TiltAngle, 0.0);
-  Analyzer.HoeslerAp := SimParams.UseHoeslerAperture;
-  if not Zero(SimParams.SectorStart, FloatEps) and not Zero(SimParams.SectorEnd, FloatEps) then
-    Analyzer.Restrict(SimParams.SectorStart, SimParams.SectorEnd);
-
-  case SimParams.Topography of
-    ttContactHole:
-      Sample := TContactHole.Create(SimParams.LayerThickness, SimParams.Width*0.5, SimParams.Depth, TraceFileName);
-    ttStripe:
-      Sample := TStripe.Create(SimParams.LayerThickness, SimParams.Width, SimParams.Depth, TraceFileName);
-    ttStep:
-      Sample := TStep.Create(SimParams.LayerThickness, SimParams.Depth, SimParams.StepDir, TraceFileName);
-  end;
-  Sample.OnlyDirect := SimParams.OnlyDirect;
-
-  EscDepth   := MaxF(Layer.EscapeDepth, Substrate.EscapeDepth);
-  DetectProc := @DetectMessageProc;
-//  SaveProc   := @SaveDetectedElectronProc;
-//  TrajProc   := @DrawTrajectory;
-
-  ResultsMemo.Lines.Clear;
-  ResultsMemo.Lines.Add(MASK, ['No.', 'X', 'Y', 'Z', 'I(top)', 'I(wall)', 'I(bottom)', 'BkSc']);
-  s6 := StringOfChar('-', 6);
-  s7 := StringOfChar('-', 7);
-  s9 := StringOfChar('-', 9);
-  s12 := StringOfChar('-', 12);
-  ResultsMemo.Lines.Add(MASK, [s7, s9, s9, s9, s12, s12, s12, s6]);
 end;
 
 procedure TForm1.InitParams;
@@ -331,6 +337,7 @@ begin
     SimParams.LayerName := cfg.ReadString(section, 'Layer material', SimParams.LayerName);
     SimParams.LayerThickness := cfg.ReadFloat(section, 'LayerThickness', SimParams.LayerThickness);
     SimParams.OnlyDirect := cfg.ReadBool(section, 'Only Direct', SimParams.OnlyDirect);
+    SimParams.TrajectoryFileName := cfg.ReadString(section, 'Trajectory file name', SimParams.TrajectoryFileName);
     TraceFileName := cfg.ReadString(section, 'Trajectory file name', TraceFileName);
     EmPtsFileName := cfg.ReadString(section, 'Emission points file name', EmPtsFileName)
 
@@ -339,7 +346,12 @@ begin
     FormatSettings := savedFormatSettings;
   end;
 
+  (*
   nPrim := 0;
+  TopIntens := 0.0;
+  BottomIntens := 0.0;
+  WallIntens := 0.0;
+  *)
   (*
   IF Continue THEN BEGIN
     CheckFileParams(Tracename, OK);
@@ -355,30 +367,71 @@ begin
   *)
 end;
 
-procedure TForm1.ParamsToGUI;
+procedure TForm1.ParamsToGUI(const AParams: TSimParams);
 begin
   sePrimElCount.Value := MaxEl;
-  sePrimEnergy.Value := SimParams.PrimaryEnergy;
-  seBeamDiam.Value := SimParams.BeamDiameter;
-  seFocusX.Value := SimParams.Focus.X;
-  seFocusY.Value := SimParams.Focus.Y;
-  seFocusZ.Value := SimParams.Focus.Z;
+  sePrimEnergy.Value := AParams.PrimaryEnergy;
+  seBeamDiam.Value := AParams.BeamDiameter;
+  seFocusX.Value := AParams.Focus.X;
+  seFocusY.Value := AParams.Focus.Y;
+  seFocusZ.Value := AParams.Focus.Z;
+end;
+
+procedure TForm1.PrepareSim;
+var
+  s6, s7, s9, s12: String;
+  i: Integer;
+  ser: TChartSeries;
+begin
+  // Clear emission points data
+  SetLength(FEmissionPoints, 0);
+
+  // Clear trajectory data
+  SetLength(FTrajectories, 0);
+
+  // Clear emission points memo
+  EmissionPointsMemo.Lines.Clear;
+
+  // Write header of emission points memo
+  EmissionPointsMemo.Lines.Add(TITLE_MASK, ['No.', 'X', 'Y', 'Z', 'I(top)', 'I(wall)', 'I(bottom)', 'BkSc']);
+  s6 := StringOfChar('-', 6);
+  s7 := StringOfChar('-', 7);
+  s9 := StringOfChar('-', 9);
+  s12 := StringOfChar('-', 12);
+  EmissionPointsMemo.Lines.Add(TITLE_MASK, [s7, s9, s9, s9, s12, s12, s12, s6]);
+
+  // Remove trajectory series
+  for i := 0 to TrajectoriesChart.SeriesCount-1 do
+    if TrajectoriesChart.Series[i] is TChartSeries then
+    begin
+      ser := TChartSeries(TrajectoriesChart.Series[i]);
+      if ser.Source is TUserDefinedChartSource then
+        TUserDefinedChartSource(ser.Source).Free;
+    end;
+  TrajectoriesChart.ClearSeries;
+
+  // Clear emission points chart
+  EmissionPointsSource.PointsNumber := 0;
 end;
 
 procedure TForm1.RunSimulation;
 var
-  electron: TElectron;
-  energy: Float;
+  sim: TSimulation;
 begin
-  InitParams;
-  GUIToParams;
-  InitObjs;
-  while (nPrim < MaxEl) and not Aborted do
-  begin
-    inc(nPrim);
-    //WritePrimEl(nPrim);
-    ElectronSource.GenEl(electron, energy);
-    Trace(nPrim, 0, electron, energy);
+  GuiToParams(SimParams);
+  PrepareSim;
+  sim := TSimulation.Create(SimParams);
+  try
+    if seTrajectories.Value > 0 then
+      sim.OnTrajectoryComplete := @TrajectoryCompleteHandler;
+    sim.OnDetection := @DetectionHandler;
+    BottomIntens := 0;
+    TopIntens := 0;
+    WallIntens := 0;
+    EscDepth := sim.EscDepth;
+    sim.Execute(sePrimElCount.Value);
+  finally
+    sim.Free;
   end;
 end;
 
@@ -445,6 +498,7 @@ begin
     cfg.WriteString(section, 'Layer material', SimParams.LayerName);
     cfg.WriteFloat(section, 'LayerThickness', SimParams.LayerThickness);
     cfg.WriteBool(section, 'Only Direct', SimParams.OnlyDirect);
+    cfg.WriteString(section, 'Trajectory file name', SimParams.TrajectoryFileName);
     cfg.WriteString(section, 'Trajectory file name', TraceFileName);
     cfg.WriteString(section, 'Emission points file name', EmPtsFileName)
 
@@ -477,6 +531,59 @@ begin
     //IF KeyPressed THEN ProcessUserInput;
   end;
 end;
+
+procedure TForm1.TrajectoryCompleteHandler(Simulation: TSimulation;
+  const AElectronID: String;
+  const ATrajectory: TTrajectory);
+var
+  ser: TLineSeries;
+  udcs: TUserDefinedChartSource;
+  i, idx: Integer;
+begin
+  SetLength(FTrajectories, Length(FTrajectories) + 1);
+  idx := High(FTrajectories);
+  FTrajectories[idx] := ATrajectory;
+
+  udcs := TUserDefinedChartSource.Create(Self);
+  udcs.Tag := idx;
+  udcs.PointsNumber := Length(ATrajectory);
+  udcs.OnGetChartDataItem := @TrajectoryGetChartDataItemHandler;
+
+  ser := TLineSeries.Create(TrajectoriesChart);
+  ser.Title := AElectronID;
+  ser.Source := udcs;
+
+  TrajectoriesChart.AddSeries(ser);
+
+  if idx >= seTrajectories.Value then
+    Simulation.OnTrajectoryComplete := nil;
+end;
+
+procedure TForm1.TrajectoryGetChartDataItemHandler(
+  ASource: TUserDefinedChartSource; AIndex: Integer; var AItem: TChartDataItem);
+var
+  trajectory: TTrajectory;
+begin
+  trajectory := FTrajectories[ASource.Tag];
+  case GetProjection of
+    XYproj:
+      begin
+        AItem.X := trajectory[AIndex].X;
+        AItem.Y := trajectory[AIndex].Y;
+      end;
+    XZproj:
+      begin
+        AItem.X := trajectory[AIndex].X;
+        AItem.Y := trajectory[AIndex].Z;
+      end;
+    YZproj:
+      begin
+        AItem.X := trajectory[AIndex].Y;
+        AItem.Y := trajectory[AIndex].Z;
+      end;
+  end;
+end;
+
 
 end.
 

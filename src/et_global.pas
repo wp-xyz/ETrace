@@ -16,7 +16,7 @@ type
 
   TNormIntensType = (niRaw, niPrimEl, niArea);
 
-  TProjType = (XYproj, XZproj, YZproj, ThreeD);
+  TProjection = (XYproj, XZproj, YZproj, ThreeD);
 
   TStepDir = (sdNone, sdUp, sdDown);
 
@@ -73,6 +73,7 @@ type
   TSimParams = record
     // general
     zAxis: TVector3;
+    TrajectoryFileName: String;
     // electron source
     PrimaryEnergy: Float;             // keV
     BeamDiameter: Float;              // µm
@@ -82,7 +83,6 @@ type
     SectorStart: Float;
     SectorEnd: Float;
     UseHoeslerAperture: Boolean;
-    OnlyDirect: Boolean;
     // sample
     SubstrateName: String;
     LayerName: String;
@@ -91,6 +91,7 @@ type
     Depth: Float;                     // µm
     LayerThickness: Float;            // µm
     StepDir: TStepDir;
+    OnlyDirect: Boolean;
     TiltAngle: Float;                 // degrees
   end;
 
@@ -98,6 +99,7 @@ const
   DefaultSimParams: TSimParams = (
     // general
     zAxis: (X:0.0; Y:0.0; Z:1.0);
+    TrajectoryFileName: '';
     // electron source
     PrimaryEnergy: 10.0;
     BeamDiameter: 0.3;
@@ -107,7 +109,6 @@ const
     SectorStart: 0.0;
     Sectorend: 0.0;
     UseHoeslerAperture: false;
-    OnlyDirect: false;
     // sample
     SubstrateName: 'Si';
     LayerName: 'SiO2';
@@ -116,6 +117,7 @@ const
     Depth: 0.5;
     LayerThickness: -999.0;
     StepDir: sdUp;
+    OnlyDirect: false;
     TiltAngle: 0.0
   );
 

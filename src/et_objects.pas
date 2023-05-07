@@ -10,26 +10,25 @@ uses
   et_Global, et_Math, et_File;
 
 const
-  Avogadro = 6E23;       { Avogadro number }
-  psMaxZ   = 103;        { Count of all chemical elements }
+  Avogadro = 6.02214076E23;   { Avogadro constant }
 
 type
   TElectron = record
     Ray: TRay;
-    Weight: float;
+    Weight: Float;
   end;
 
   TAugerElectron = record
     Ray: TRay;
     Weight: float;
     GenByBkscEl: Boolean;
-  END;
+  end;
 
   TElectronSource = class
     Energy      : float;
     Axis        : TVector3;
     theta       : float;
-    BeamR       : float;        { Bream radius = std deviation of the normal distribution }
+    BeamR       : float;       { Bream radius = std deviation of the normal distribution }
     FocusedPoint: TVector3;
     Fired       : LongInt;
     constructor Create(PolarAngle, E, BeamDiam: float; Focus: TVector3);
@@ -38,16 +37,16 @@ type
   end;
 
   TAnalyzer = class
-    Axis        : TVector3;     { Analyzer axis, as seen in the sample coordinate system }
-    Acc1,Acc2   : float;        { cosine of the accepted range }
-    SectorFrom  : float;
-    SectorTo    : float;
-    Restricted  : boolean;
-    HoeslerAp   : boolean;
-    Detected    : LongInt;
-    Intensity   : float;
+    Axis         : TVector3;   { Analyzer axis, as seen in the sample coordinate system }
+    Acc1, Acc2   : float;      { cosine of the accepted range }
+    SectorFrom   : float;
+    SectorTo     : float;
+    Restricted   : boolean;
+    UseHoeslerAp : boolean;
+    Detected     : LongInt;
+    Intensity    : float;
     constructor Create(AnalyzerType: TAnalyzerType; PolarAngle, AzimAngle: float);
-    procedure Detect(var Electron: TAugerElectron);
+    function Detect(var Electron: TAugerElectron): Integer;
     procedure Restrict(ASectorFrom, ASectorTo: Float);
   end;
 
@@ -88,6 +87,11 @@ type
   end;
 
   TSample = class
+  private
+    FLayer: TMaterial;
+    FSubstrate: TMaterial;
+    FPrimaryEnergy: Float;
+  public
     Material    : TMaterial;
     zInterface  : float;
     maxStepLen  : float;
@@ -95,11 +99,12 @@ type
     Intensfact  : float;
     Trajectory  : TMatrix;
     OnlyDirect  : boolean;
-    constructor Create(theLayerThickness: float; theTraceFile: string);
+    constructor Create(ASubstrate, ALayer: TMaterial;
+      APrimaryEnergy, ALayerThickness: float; ATraceFile: string);
     destructor  Destroy; override;
     function    CancelTrace: Boolean;
     procedure   ChangeMaterial(NewMaterial: TMaterial);
-    procedure   DrawSample(Projection: TProjType); virtual;
+    procedure   DrawSample(Projection: TProjection); virtual;
     function    EmitAugerEl(Point: TVector3; E: float; var Electron: TAugerElectron): boolean;
     function    Intersection(Ray: TRay; var Point:TVector3; FromOutside: Boolean): Boolean; virtual;
     function    OnSurface(Point: TVector3): boolean; virtual; abstract;
@@ -113,8 +118,9 @@ type
   TContactHole = class(TSample)
     Radius      : float;
     Depth       : float;
-    constructor Create(theLayerThickness, theRadius, theDepth: float; theTraceFile: string);
-    procedure   DrawSample(Projection: TProjType); override;
+    constructor Create(ASubstrate, ALayer: TMaterial;
+      APrimaryEnergy, ALayerThickness, ARadius, ADepth: float; ATraceFile: string);
+    procedure   DrawSample(Projection: TProjection); override;
     function    InHole(Point: TVector3): Boolean;
     function    Intersection(Ray: TRay; var Point: TVector3; FromOutside: Boolean): Boolean; override;
     function    OnSurface(Point: TVector3): Boolean; override;
@@ -125,8 +131,9 @@ type
   TStripe = class(TSample)
     Width       : float;
     Height      : float;
-    constructor Create(theLayerThickness, theWidth, theHeight: float; theTraceFile: String);
-    procedure   DrawSample(Projection: TProjType); override;
+    constructor Create(ASubstrate, ALayer: TMaterial;
+      APrimaryEnergy, ALayerThickness, AWidth, AHeight: float; ATraceFile: String);
+    procedure   DrawSample(Projection: TProjection); override;
     function    Intersection(Ray: TRay; var Point: TVector3; FromOutside: boolean): Boolean; override;
     function    OnSurface(Point: TVector3): Boolean; override;
     function    Outside(Point: TVector3): Boolean; override;
@@ -136,8 +143,9 @@ type
   TStep = class(TSample)
     Height      : Float;
     Dir         : TStepDir;
-    constructor Create(theLayerThickness, theHeight: Float; theDir: TStepDir; theTracefile: string);
-    procedure   DrawSample(Projection: TProjType); override;
+    constructor Create(ASubstrate, ALayer: TMaterial;
+      APrimaryEnergy, ALayerThickness, AHeight: Float; ADir: TStepDir; ATracefile: string);
+    procedure   DrawSample(Projection: TProjection); override;
     function    Intersection(Ray: TRay; var Point: TVector3; FromOutside: Boolean): Boolean; override;
     function    OnSurface(Point: TVector3) : BOOLEAN; override;
     function    Outside(Point: TVector3) : BOOLEAN; override;
@@ -179,10 +187,11 @@ implementation
 (****************************************************************************)
 
 type
-  ElementNameType = string[2];      { Type for element names }
+  TElementName = string[2];   // Type used for element names
 
 const
-  ElementName: array[1..psMaxZ] of ElementNameType =
+  psMaxZ = 103;    //Count of chemical elements used in array ElementName
+  ElementName: array[1..psMaxZ] of TElementName =
     ('H' ,'He','Li','Be','B' ,'C' ,'N' ,'O' ,'F' , 'Ne',
      'Na','Mg','Al','Si','P' ,'S', 'Cl','Ar','K' , 'Ca',
      'Sc','Ti','V' ,'Cr','Mn','Fe','Co','Ni','Cu', 'Zn',
@@ -194,7 +203,7 @@ const
      'Tl','Pb','Bi','Po','At','Rn','Fr','Ra','Ac', 'Th',
      'Pa','U' ,'Np','Pu','Am','Cm','Bk','Cf','ES', 'Fm',
      'Md','No','Lw');
-  { index = Z of element }
+     // The index into this array is the atomic number Z of the corresponding element
 
 const
   Z_SiO2  = 10.1;   { Z is used as "Index", in order to assign parameters to these materials. }
@@ -236,7 +245,7 @@ begin
     Result:= 1.0
   else
   if Equal(Z, Z_SiO2, SingleEps) then
-    Result := 1.0 {/3.0 <<<<<<<<<<<<<<<<<<<}  // ????
+    Result := 1.0 {/3.0 <<<<<<<<<<<<<<<<<<<}  // ???? why not ????
   else
   if Equal(Z, Z_Si3N4, SingleEps) then
     Result := 3.0/7.0
@@ -339,15 +348,15 @@ end;
   respect to the sample. }
 constructor TAnalyzer.Create(AnalyzerType: TAnalyzerType;
   PolarAngle, AzimAngle: float);
+const
+  CMA_ANGLE = 42.3;
 begin
   inherited Create;
-  PolarAngle := DegToRad(PolarAngle);
-  AzimAngle  := DegToRad(AzimAngle);
-  SphToCart(PolarAngle,AzimAngle, Axis.X, Axis.Y, Axis.Z);
+  SphToCart(DegToRad(PolarAngle), DegToRad(AzimAngle), Axis.X, Axis.Y, Axis.Z);
   case AnalyzerType of
     atCMA : begin
-              Acc1 := Cos(DegToRad(42.3-6.0));
-              Acc2 := Cos(DegToRad(42.3+6.0));
+              Acc1 := Cos(DegToRad(CMA_ANGLE - 6.0));
+              Acc2 := Cos(DegToRad(CMA_ANGLE + 6.0));
             end;
     atCHA : begin
               Acc1 := Cos(DegToRad(0.0));
@@ -359,7 +368,7 @@ begin
   Intensity  := 0.0;
 end;
 
-procedure TAnalyzer.Detect(var Electron: TAugerElectron);
+function TAnalyzer.Detect(var Electron: TAugerElectron): Integer;
 const
   Cos_HoeslerAngle = 0.173648;
 var
@@ -373,7 +382,7 @@ begin
     { The following code implements the Hösler aperture: Electrons can reach
       the analyzer only if the emission angle with respect to the surface
       normal is > 80 degrees. }
-    if HoeslerAp and (VecAngle(Electron.Ray.Dir, SimParams.zAxis) < DegToRad(80.0)) then
+    if UseHoeslerAp and (VecAngle(Electron.Ray.Dir, SimParams.zAxis) < DegToRad(80.0)) then
       Exit;
 
     { The following code is executed if the analyzer acceptance is restricted
@@ -383,14 +392,14 @@ begin
     begin
       with Axis do VecAssign(AX, X,Y,Z);
       Normalize(Electron.Ray.Dir);
-      VecMulSc(AX, DotProduct(Electron.Ray.Dir,AX));
+      VecMulSc(AX, DotProduct(Electron.Ray.Dir, AX));
         { component of the beam projected onto the axis }
-      VecSub(Electron.Ray.Dir,AX, P);
+      VecSub(Electron.Ray.Dir, AX, P);
       Normalize(P);
       { P is the projection of the electron beam onto the plane normal to the
         analyzer axis. }
 
-        VecAssign(AX, Axis.Z, 0.0, -Axis.X);
+      VecAssign(AX, Axis.Z, 0.0, -Axis.X);
       Normalize(AX);
       tmp := VecAngle(AX, P);    { Angle between projection and x plane }
       if (tmp < SectorFrom) or (tmp > SectorTo) then
@@ -402,6 +411,8 @@ begin
     if SaveProc <> nil then  TSaveDetElProc(SaveProc)(Electron);
     if DetectProc <> nil then TDetectMsgProc(DetectProc)(Detected, Electron);
   end;
+
+  Result := Detected;
 end;
 
 { ASectorFrom, ASectorTo describe the aszimuthal acceptance range (in degrees).
@@ -622,25 +633,28 @@ end;
 (* (back-) scattered electrons.                                             *)
 (****************************************************************************)
 
-constructor TSample.Create(theLayerThickness: float; theTraceFile: String);
+constructor TSample.Create(ASubstrate, ALayer: TMaterial;
+  APrimaryEnergy: Float; ALayerThickness: float; ATraceFile: String);
 const
   nMax = 2000;
 begin
-  if (Layer = nil) or (Substrate = nil) then
-    raise Exception.Create('[TSample.Create] Materials have not been initialized.');
-  if (ElectronSource = nil) then
-    raise Exception.Create('[TSample.Create]: EGun has not been initialized.');
+  FLayer := ALayer;
+  FSubstrate := ASubstrate;
+  FPrimaryEnergy := APrimaryEnergy;
 
-  zInterface := -abs(theLayerThickness);
-  TraceFile  := theTraceFile;
+  if (FLayer = nil) or (FSubstrate = nil) then
+    raise Exception.Create('[TSample.Create] Materials have not been initialized.');
+
+  zInterface := -abs(ALayerThickness);
+  TraceFile  := ATraceFile;
 
   if Zero(zInterface, SingleEps) then
-    ChangeMaterial(Substrate)
+    ChangeMaterial(FSubstrate)
   else
-    ChangeMaterial(Layer);
+    ChangeMaterial(FLayer);
 
-  with Substrate do
-    IntensFact := 1.0 / (ElemDensity * EscapeDepth * CalcAugerCrossSection(ElectronSource.Energy));
+  with FSubstrate do
+    IntensFact := 1.0 / (ElemDensity * EscapeDepth * CalcAugerCrossSection(FPrimaryEnergy));
 
   { Every detected Auger electrons adds the amount
            Intensfact * AugerCrossSctn * EscapeDepth
@@ -681,13 +695,13 @@ begin
   if NewMaterial <> Material then
   begin
     Material := NewMaterial;
-    Material.RutherfordScattParams(ElectronSource.Energy, sigma, alpha);
+    Material.RutherfordScattParams(FPrimaryEnergy, sigma, alpha);
     MaxStepLen := -1E4 / (Material.NumDensity * sigma) * Ln(0.001);
       { 1E4 to account for conversion from cm (sigma, NumDensity) to µm }
   end;
 end;
 
-procedure TSample.DrawSample(Projection: TProjType);
+procedure TSample.DrawSample(Projection: TProjection);
 begin
 end;
 
@@ -846,6 +860,8 @@ end;
   <Name> is the name of the MatLab variable in the file. }
 function TSample.Trace(Name: String; var Electron: TElectron; var E: float;
   Emin: float): Boolean;
+const
+  FROM_INSIDE = false;
 var
   AugerEl    : TAugerElectron;
   P          : TVector3;
@@ -871,14 +887,14 @@ begin
         begin
           Ray := Electron.Ray;       // the electron has left the sample
           VecMulSc(Ray.Dir, -1.0);   // Determine the point of emission
-          if Intersection(Ray, P, false) then Point := P;   {<<< was: TRUE >>> }
+          if Intersection(Ray, P, FROM_INSIDE) then Point := P;   {<<< was: TRUE >>> }
           Finished := true;
         end;
 
         if GreaterThan(Point.Z, zInterface, FloatEps) then
           ChangeMaterial(Layer)
         else
-        if LessThan(Point.Z, zInterface, FloatEps) or Equal(Point.Z,zInterface, FloatEps) then
+        if LessThan(Point.Z, zInterface, FloatEps) or Equal(Point.Z, zInterface, FloatEps) then
           ChangeMaterial(Substrate);
 
         AugerEl.GenByBkScEl := LessThan(E, ElectronSource.Energy, FloatEps);
@@ -916,19 +932,20 @@ end;
 (* contact hole depth.                                                      *)
 (****************************************************************************)
 
-constructor TContactHole.Create(theLayerThickness, theRadius, theDepth: float;
-  theTraceFile: String);
+constructor TContactHole.Create(ASubstrate, ALayer: TMaterial;
+  APrimaryEnergy, ALayerThickness, ARadius, ADepth: float;
+  ATraceFile: String);
 begin
-  if LessThan(theLayerThickness, 0.0, SingleEps) then
-    theLayerThickness := theDepth;
+  if LessThan(ALayerThickness, 0.0, SingleEps) then
+    ALayerThickness := ADepth;
 
-  inherited Create(theLayerThickness, theTraceFile);
+  inherited Create(ASubstrate, ALayer, APrimaryEnergy, ALayerThickness, ATraceFile);
 
-  Radius := theRadius;
-  Depth  := -Abs(theDepth);          { negative z coordinate at the bottom }
+  Radius := ARadius;
+  Depth  := -Abs(ADepth);    // negative z coordinate at the bottom
 end;
 
-procedure TContactHole.DrawSample(Projection: TProjType);
+procedure TContactHole.DrawSample(Projection: TProjection);
 begin
   // must be redone for LCL
 end;
@@ -1100,19 +1117,20 @@ end;
 (* stripe height.                                                           *)
 (****************************************************************************)
 
-constructor TStripe.Create(theLayerThickness, theWidth, theHeight: float;
-  theTraceFile: String);
+constructor TStripe.Create(ASubstrate, ALayer: TMaterial;
+  APrimaryEnergy, ALayerThickness, AWidth, AHeight: float;
+  ATraceFile: String);
 begin
-  if LessThan(theLayerThickness, 0.0, FloatEps) then
-    theLayerThickness := theHeight;
+  if LessThan(ALayerThickness, 0.0, FloatEps) then
+    ALayerThickness := AHeight;
 
-  inherited Create(theLayerThickness, theTraceFile);
+  inherited Create(ASubstrate, ALayer, APrimaryEnergy, ALayerThickness, ATraceFile);
 
-  Width := theWidth;
-  Height:= -abs(theHeight);          { negative z coordinates at the bottom }
+  Width := AWidth;
+  Height := -abs(AHeight);    // negative z coordinates at the bottom
 end;
 
-procedure TStripe.DrawSample(Projection: TProjType);
+procedure TStripe.DrawSample(Projection: TProjection);
 begin
   // To be implemented for LCL
 end;
@@ -1257,17 +1275,18 @@ end;
 (* to the step height.                                                      *)
 (****************************************************************************)
 
-constructor TStep.Create(theLayerthickness, theHeight: Float; theDir: TStepDir;
-  theTraceFile: String);
+constructor TStep.Create(ASubstrate, ALayer: TMaterial;
+  APrimaryEnergy, ALayerthickness, AHeight: Float; ADir: TStepDir;
+  ATraceFile: String);
 begin
-  if LessThan(theLayerThickness, 0.0, FloatEps) then
-    theLayerThickness := theHeight;
-  inherited Create(theLayerThickness, theTraceFile);
-  Dir := theDir;
-  Height:= -abs(theHeight);          { negative z coordinates at the bottom! }
+  if LessThan(ALayerThickness, 0.0, FloatEps) then
+    ALayerThickness := AHeight;
+  inherited Create(ASubstrate, ALayer, APrimaryEnergy, ALayerThickness, ATraceFile);
+  Dir := ADir;
+  Height:= -abs(AHeight);     // negative z coordinates at the bottom!
 END;
 
-procedure TStep.DrawSample(Projection:TProjType);
+procedure TStep.DrawSample(Projection:TProjection);
 begin
   { Must be implemented for LCL }
 end;

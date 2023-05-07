@@ -25,6 +25,9 @@
     </RunParams>
     <RequiredPackages>
       <Item>
+        <PackageName Value="TAChartLazarusPkg"/>
+      </Item>
+      <Item>
         <PackageName Value="LCL"/>
       </Item>
     </RequiredPackages>
@@ -87,8 +90,9 @@
         <UnitName Value="et_Info"/>
       </Unit>
       <Unit>
-        <Filename Value="src\ed_sim.pas"/>
+        <Filename Value="src\et_sim.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="et_Sim"/>
       </Unit>
     </Units>
   </ProjectOptions>
@@ -107,11 +111,6 @@
       <Debugging>
         <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
-      <Options>
-        <Win32>
-          <GraphicApplication Value="True"/>
-        </Win32>
-      </Options>
     </Linking>
   </CompilerOptions>
   <Debugging>

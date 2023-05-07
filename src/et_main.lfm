@@ -1,9 +1,9 @@
-object Form1: TForm1
+object MainForm: TMainForm
   Left = 261
   Height = 498
   Top = 130
   Width = 912
-  Caption = 'Form1'
+  Caption = 'Electron Tracer'
   ClientHeight = 498
   ClientWidth = 912
   OnCreate = FormCreate
@@ -14,13 +14,13 @@ object Form1: TForm1
     Height = 482
     Top = 8
     Width = 651
-    ActivePage = pgTrajectories
+    ActivePage = pgEmissionPoints
     Align = alClient
     BorderSpacing.Left = 8
     BorderSpacing.Top = 8
     BorderSpacing.Right = 8
     BorderSpacing.Bottom = 8
-    TabIndex = 1
+    TabIndex = 0
     TabOrder = 0
     object pgEmissionPoints: TTabSheet
       Caption = 'Emission points'

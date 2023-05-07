@@ -19,9 +19,9 @@ uses
 
 type
 
-  { TForm1 }
+  { TMainForm }
 
-  TForm1 = class(TForm)
+  TMainForm = class(TForm)
     btnRunSim: TButton;
     EmissionPointsSeries: TLineSeries;
     Label2: TLabel;
@@ -66,7 +66,6 @@ type
     procedure TrajectoryGetChartDataItemHandler(ASource: TUserDefinedChartSource;
       AIndex: Integer; var AItem: TChartDataItem);
   private
-    nPrim: Integer;
     TraceFileName: String;
     EmPtsFileName: String;
     FEmissionPoints: array of TVector3;
@@ -74,12 +73,11 @@ type
     function GetProjection: TProjection;
     procedure GUIToParams(var AParams: TSimParams);
     function InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
-    procedure InitParams;
+    procedure LoadParamsFromCfg;
     procedure ParamsToGUI(const AParams: TSimParams);
     procedure PrepareSim;
     procedure RunSimulation;
-    procedure SaveParams;
-    procedure Trace(prim, sec: Integer; Electron: TElectron; Energy: float);
+    procedure SaveParamsToCfg;
 
     // Event handlers
     procedure DetectionHandler(Simulation: TSimulation;
@@ -92,7 +90,7 @@ type
   end;
 
 var
-  Form1: TForm1;
+  MainForm: TMainForm;
 
 implementation
 
@@ -101,18 +99,12 @@ implementation
 const
   TITLE_MASK = '%7s %9s %9s %9s %12s %12s %12s %6s';
   VALUE_MASK = '%7d %9.3f %9.3f %9.3f %12.*f %12.*f %12.*f %6s';
+
 var
-  MaxEl: Integer = 100;  // Number of iterations
   BottomIntens: Float = 0.0;
   TopIntens: Float = 0.0;
   WallIntens: Float = 0.0;
-  nDet: Integer = 0;    // Number of detected events
-  nDetOld: Integer = 0; // Number of detected events found in EmPts file
-  nPrim: Integer = 0;   // current iteration counter (= number of primary electrons
   EscDepth: float;
-  TraceFileName: String = '';
-  EmPtsFileName: String = '';
-  Aborted: Boolean = false;
 
 procedure EvalIntensities(const ASimParams: TSimParams; EscDepth: Float;
   Point: TVector3; dI: Float; var TopIntens, BottomIntens, WallIntens: Float);
@@ -171,19 +163,19 @@ begin
 end;
 
 
-{ TForm1 }
+{ TMainForm }
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TMainForm.Button1Click(Sender: TObject);
 begin
   RunSimulation;
 end;
 
-procedure TForm1.btnRunSimClick(Sender: TObject);
+procedure TMainForm.btnRunSimClick(Sender: TObject);
 begin
   RunSimulation;
 end;
 
-procedure TForm1.DetectionHandler(Simulation: TSimulation;
+procedure TMainForm.DetectionHandler(Simulation: TSimulation;
   AElectronCount: Integer; const AElectron: TAugerElectron);
 const
   CROSS: array[boolean] of String[1] = (' ', 'X');
@@ -211,31 +203,31 @@ begin
   end;
 end;
 
-procedure TForm1.EmissionPointsSourceGetChartDataItem(
+procedure TMainForm.EmissionPointsSourceGetChartDataItem(
   ASource: TUserDefinedChartSource; AIndex: Integer; var AItem: TChartDataItem);
 begin
   AItem.X := FEmissionPoints[AIndex].X;
   AItem.Y := FEmissionPoints[AIndex].Y;
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TMainForm.FormCreate(Sender: TObject);
 begin
-  InitParams;
+  LoadParamsFromCfg;
   ParamsToGui(SimParams);
 end;
 
-procedure TForm1.FormDestroy(Sender: TObject);
+procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   GuiToParams(SimParams);
-  SaveParams;
+  SaveParamsToCfg;
 end;
 
-function TForm1.GetProjection: TProjection;
+function TMainForm.GetProjection: TProjection;
 begin
   Result := TProjection(rgProjection.ItemIndex);
 end;
 
-procedure TForm1.rgProjectionClick(Sender: TObject);
+procedure TMainForm.rgProjectionClick(Sender: TObject);
 const
   TITLE_X: array[TProjection] of String = ('X', 'X', 'Y', '3D');
   TITLE_Y: array[TProjection] of String = ('Y', 'Z', 'Z', '3D');
@@ -254,9 +246,9 @@ begin
   TrajectoriesChart.BottomAxis.Title.Caption := TITLE_X[GetProjection];
 end;
 
-procedure TForm1.GUIToParams(var AParams: TSimParams);
+procedure TMainForm.GUIToParams(var AParams: TSimParams);
 begin
-  MaxEl := sePrimElCount.Value;
+  AParams.NumElectrons := sePrimElCount.Value;
   AParams.PrimaryEnergy := sePrimEnergy.Value;
   AParams.BeamDiameter := seBeamDiam.Value;
   AParams.Focus.X := seFocusX.Value;
@@ -264,7 +256,7 @@ begin
   AParams.Focus.Z := seFocusZ.Value;
 end;
 
-function TForm1.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
+function TMainForm.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
 var
   P: TMaterialParams;
 begin
@@ -275,7 +267,7 @@ begin
     Result := TMaterial.Create(Z, A, Massdensity, CoreLevel, AugerEnergy);
 end;
 
-procedure TForm1.InitParams;
+procedure TMainForm.LoadParamsFromCfg;
 var
   cfg: TCustomIniFile;
   s: String;
@@ -288,10 +280,10 @@ begin
     FormatSettings.DecimalSeparator := '.';
 
     section := 'Params';
-    MaxEl := cfg.ReadInteger(section, 'Iterations', MaxEl);
     SimParams.TiltAngle := cfg.ReadFloat(section, 'Tilt angle', SimParams.TiltAngle);
     SimParams.PrimaryEnergy := cfg.ReadFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
     SimParams.BeamDiameter := cfg.ReadFloat(section, 'Beam diameter', SimParams.BeamDiameter);
+    SimParams.NumElectrons := cfg.ReadInteger(section, 'NumElectrons', SimParams.NumElectrons);
     s := cfg.ReadString(section, 'Analyzer type', '');
     case Uppercase(s) of
       'CMA', '': SimParams.AnalyzerType := atCMA;
@@ -345,31 +337,11 @@ begin
     cfg.Free;
     FormatSettings := savedFormatSettings;
   end;
-
-  (*
-  nPrim := 0;
-  TopIntens := 0.0;
-  BottomIntens := 0.0;
-  WallIntens := 0.0;
-  *)
-  (*
-  IF Continue THEN BEGIN
-    CheckFileParams(Tracename, OK);
-    CheckFileParams(EmPtFName, OK);
-    IF NOT OK THEN
-      HaltError('Die aktuellen Parameter unterscheiden sich von '+
-        'denen in der Datei.');
-  END;
-  IF (MaxEl>500) AND (TraceName<>'') THEN BEGIN
-    Write('Es sollen mehr als 500 Trajektorien gespeichert werden. OK (j/n)? ');
-    IF UpCase(ReadKey)='N' THEN Halt(0);
-  END;
-  *)
 end;
 
-procedure TForm1.ParamsToGUI(const AParams: TSimParams);
+procedure TMainForm.ParamsToGUI(const AParams: TSimParams);
 begin
-  sePrimElCount.Value := MaxEl;
+  sePrimElCount.Value := AParams.NumElectrons;
   sePrimEnergy.Value := AParams.PrimaryEnergy;
   seBeamDiam.Value := AParams.BeamDiameter;
   seFocusX.Value := AParams.Focus.X;
@@ -377,7 +349,7 @@ begin
   seFocusZ.Value := AParams.Focus.Z;
 end;
 
-procedure TForm1.PrepareSim;
+procedure TMainForm.PrepareSim;
 var
   s6, s7, s9, s12: String;
   i: Integer;
@@ -414,7 +386,7 @@ begin
   EmissionPointsSource.PointsNumber := 0;
 end;
 
-procedure TForm1.RunSimulation;
+procedure TMainForm.RunSimulation;
 var
   sim: TSimulation;
 begin
@@ -435,7 +407,7 @@ begin
   end;
 end;
 
-procedure TForm1.SaveParams;
+procedure TMainForm.SaveParamsToCfg;
 var
   cfg: TCustomIniFile;
   s: String;
@@ -449,7 +421,7 @@ begin
 
     section := 'Params';
     cfg.EraseSection(section);
-    cfg.WriteInteger(section, 'Iterations', MaxEl);
+    cfg.WriteInteger(section, 'NumElectrons', SimParams.NumElectrons);
     cfg.WriteFloat(section, 'Tilt angle', SimParams.TiltAngle);
     cfg.WriteFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
     cfg.WriteFloat(section, 'Beam diameter', SimParams.BeamDiameter);
@@ -508,31 +480,7 @@ begin
   end;
 end;
 
-procedure TForm1.Trace(prim, sec: Integer; Electron: TElectron; Energy: float);
-var
-  Point: TVector3;
-  s: String;
-  IsPrimEl: BOOLEAN;
-  MinEnergy: float;
-begin
-  if etError = etOK then
-  begin
-    MinEnergy := MinF(Layer.Eb, Substrate.Eb);
-    IsPrimEl := (sec=0);
-    if Sample.Intersection(Electron.Ray, Point, IsPrimEl) then
-    begin
-      Electron.Ray.Point := Point;
-      s := 'el_' + IntToStr(prim);
-      if sec <> 0 then
-        s := s + '_' + IntToStr(sec);
-      if (sec < 10) and Sample.Trace(s, Electron, Energy, MinEnergy) then
-        Trace(prim, sec+1, Electron, Energy);
-    end;
-    //IF KeyPressed THEN ProcessUserInput;
-  end;
-end;
-
-procedure TForm1.TrajectoryCompleteHandler(Simulation: TSimulation;
+procedure TMainForm.TrajectoryCompleteHandler(Simulation: TSimulation;
   const AElectronID: String;
   const ATrajectory: TTrajectory);
 var
@@ -559,7 +507,7 @@ begin
     Simulation.OnTrajectoryComplete := nil;
 end;
 
-procedure TForm1.TrajectoryGetChartDataItemHandler(
+procedure TMainForm.TrajectoryGetChartDataItemHandler(
   ASource: TUserDefinedChartSource; AIndex: Integer; var AItem: TChartDataItem);
 var
   trajectory: TTrajectory;

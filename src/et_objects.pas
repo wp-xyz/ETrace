@@ -102,7 +102,6 @@ type
     constructor Create(ASubstrate, ALayer: TMaterial;
       APrimaryEnergy, ALayerThickness: float; ATraceFile: string);
     destructor  Destroy; override;
-    function    CancelTrace: Boolean;
     procedure   ChangeMaterial(NewMaterial: TMaterial);
     procedure   DrawSample(Projection: TProjection); virtual;
     function    EmitAugerEl(Point: TVector3; E: float; var Electron: TAugerElectron): boolean;
@@ -112,7 +111,6 @@ type
     procedure   Scatter(var Electron: TElectron; var E: float);
     procedure   Save(Point: TVector3; E: float; n:integer);
     procedure   SurfNormal(Point:TVector3; var Normal: TVector3); virtual; abstract;
-    function    Trace(Name: String; var Electron: TElectron; var E: float; Emin: Float): Boolean;
   end;
 
   TContactHole = class(TSample)
@@ -152,31 +150,11 @@ type
     procedure   SurfNormal(Point: TVector3; var Normal: TVector3); override;
   end;
 
-type
-  TDetectMsgProc   = procedure(nr: LongInt; var Electron: TAugerElectron);
-  TCancelTraceFunc = function: Boolean;
-  TSaveDetElProc   = procedure(var Electron: TAugerElectron);
-  TTrajectoryProc  = procedure(Trajectory: TMatrix);
-
-const
-  Analyzer        : TAnalyzer       = nil;
-  ElectronSource  : TElectronSource = nil;
-  DetectProc      : Pointer         = nil;
-  CancelTraceFunc : Pointer         = nil;
-  SaveProc        : Pointer         = nil;
-  TrajProc        : Pointer         = nil;
-  Substrate       : TMaterial       = nil;
-  Layer           : TMaterial       = nil;
-  Sample          : TSample         = nil;
-
 function GetElementName(Z: float; AllowSubscripts: Boolean): String;
-
 function GetAtomsPerMolecule(Z: float): Integer;
-
 function GetConcentration(Z: float): float;
 
 function NewMaterialsList: TMaterialsList;
-
 function NewMaterial(theZ, theMolecMass, theMassDensity, theCoreLevel,
            theAugerEnergy: float): TMaterialParams;
 
@@ -408,8 +386,6 @@ begin
 
     inc(Detected);
     Intensity := Intensity + Electron.Weight;
-    if SaveProc <> nil then  TSaveDetElProc(SaveProc)(Electron);
-    if DetectProc <> nil then TDetectMsgProc(DetectProc)(Detected, Electron);
   end;
 
   Result := Detected;
@@ -676,18 +652,6 @@ begin
   inherited;
 end;
 
-function TSample.CancelTrace: Boolean;
-var
-  cancelFunc: TCancelTraceFunc;
-begin
-  Result := false;
-  if CancelTraceFunc <> nil then
-  begin
-    cancelFunc := TCancelTraceFunc(CancelTraceFunc);
-    Result := cancelFunc();
-  end;
-end;
-
 procedure TSample.ChangeMaterial(NewMaterial: TMaterial);
 var
   sigma, alpha: float;
@@ -841,82 +805,6 @@ begin
     Trajectory.Putvalue(n,3, Point.Z);
     Trajectory.Putvalue(n,4, E);
   end;
-end;
-
-{ Traces a primary electron which enters the sample with energy <E> at point
-  <Electron.Ray.Point> and in direction <Electron.Ray.Dir>.
-  The path is traced by means of the Monte-Carlo routine Scatter() until the
-  electron's energy has dropped below the minimum energy <EMin>, or until the
-  electron has left the sample.
-  If the electron has left the sample the function result becomes true, and the
-  field <Electron.Ray> gets the exit point and the exit direction, and <E> gets
-  the energy at exit.
-  If the trajectory intersects the surface an Auger electron is "emitted" by
-  calling the method EmitAugerEl(). If the Auger electron leaves the sample
-  (i.e., the result of EmitAugerEl() is true), then it is checked by calling the
-  function Analyzer.Detect whether the electon enters the analyzer.
-  The coordinates along the path as well as the energy are added as columns to
-  the Matlab file <TraceFile> (which already must be opened)
-  <Name> is the name of the MatLab variable in the file. }
-function TSample.Trace(Name: String; var Electron: TElectron; var E: float;
-  Emin: float): Boolean;
-const
-  FROM_INSIDE = false;
-var
-  AugerEl    : TAugerElectron;
-  P          : TVector3;
-  Ray        : TRay;
-  Finished   : boolean;
-  Matrix     : TMatrix;
-  n          : Integer = 0;
-  nMax       : Integer = 0;
-begin
-  finished := false;
-  if etError = etOK then
-    with Electron.Ray do
-    begin
-      if Trajectory <> nil then
-        Trajectory.Size(nMax, n)
-      else
-        nMax := MaxInt;
-      n := 0;
-      repeat
-        inc(n);
-        Save(Point, E, n);
-        if Outside(Point) then
-        begin
-          Ray := Electron.Ray;       // the electron has left the sample
-          VecMulSc(Ray.Dir, -1.0);   // Determine the point of emission
-          if Intersection(Ray, P, FROM_INSIDE) then Point := P;   {<<< was: TRUE >>> }
-          Finished := true;
-        end;
-
-        if GreaterThan(Point.Z, zInterface, FloatEps) then
-          ChangeMaterial(Layer)
-        else
-        if LessThan(Point.Z, zInterface, FloatEps) or Equal(Point.Z, zInterface, FloatEps) then
-          ChangeMaterial(Substrate);
-
-        AugerEl.GenByBkScEl := LessThan(E, ElectronSource.Energy, FloatEps);
-        if EmitAugerEl(Point, E, AugerEl) then
-          Analyzer.Detect(AugerEl);
-        if not OnlyDirect then
-          Scatter(Electron, E);
-        if (E < EMin) or CancelTrace() then
-          Finished := true;
-      until Finished or (etError <> etOK) or (n > nMax) or OnlyDirect;
-
-      if Trajectory <> nil then
-      begin
-        Matrix := TMatrix.SubMatrixOf(Trajectory, 1,1,n,4);
-        MatlabFile_Append(TraceFile, Name, Matrix);
-        if TrajProc <> nil then
-          TTrajectoryProc(TrajProc)(Matrix);
-        ClearMat(Matrix);
-      end;
-    end;
-  Result := (E >= Emin) and (not OnlyDirect);
-  { Only when electron has exited the sample E is greater than Emin }
 end;
 
 

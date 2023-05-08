@@ -6,8 +6,8 @@ interface
 
 uses
   Classes, Contnrs, SysUtils,
-  MGlobal, MFunc, MMatrix,
-  et_Global, et_Math, et_File;
+  MGlobal, MFunc,
+  et_Global, et_Math;
 
 const
   Avogadro = 6.02214076E23;   { Avogadro constant }
@@ -793,6 +793,11 @@ var
   psi       : float;         { angle between z axis and old direction }
   step      : float;         { scattering distance (in µm) }
 begin
+  // to silence the compiler...
+  RotAx := Default(TVector3);
+  Dir := Default(TVector3);
+  Point := Default(TVector3);
+
   Material.RutherfordScattParams(E, sigma, alpha);
 
   { *** 1 - Polar scattering angle **** }
@@ -1084,8 +1089,6 @@ BEGIN
 END;
 *)
 
-{---------------------------------------------------------------------------}
-
 function TStripe.Intersection(Ray: TRay; var Point: TVector3;
   FromOutside: Boolean): Boolean;
 var
@@ -1240,6 +1243,8 @@ var
   Plane    : TRay;
   dt,db,dw : Float;
 begin
+  Plane := Default(TRay);  // to silence the compiler
+
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { Intersection at the top }
   Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);

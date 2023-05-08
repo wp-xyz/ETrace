@@ -6,29 +6,53 @@ interface
 
 uses
   // RTL, FCL
-  Classes, SysUtils, StrUtils, IniFiles,
+  Classes, SysUtils, IniFiles,
   // LCL
   Forms, Controls, Graphics, Dialogs, StdCtrls,
-  Spin, ExtCtrls, ComCtrls,
+  Spin, ExtCtrls, ComCtrls, Buttons,
   // TAChart
-  TAGraph, TACustomSeries, TASeries, TASources,
+  TAGraph, TACustomSource, TACustomSeries, TASeries, TASources,
   // Math lib
   MGlobal, MFunc,
   // project units
-  et_Global, et_Math, et_File, et_Objects, et_Info, et_Sim, TACustomSource;
+  et_Global, et_Objects, et_Sim;
 
 type
 
   { TMainForm }
 
   TMainForm = class(TForm)
+    Bevel1: TBevel;
     btnRunSim: TButton;
     cbUseHoeslerAp: TCheckBox;
+    cbAnnularAperture: TCheckBox;
+    cmbTopography: TComboBox;
+    cmbSubstrate: TComboBox;
+    cmbLayer: TComboBox;
+    ProgressBar: TProgressBar;
+    seSectorFrom: TFloatSpinEdit;
+    seSectorTo: TFloatSpinEdit;
+    gbSample: TGroupBox;
+    lblFrom: TLabel;
+    lblTo: TLabel;
+    lblDeg: TLabel;
+    lblWidth: TLabel;
+    lblLayerThickness: TLabel;
+    lblDepth: TLabel;
+    lblSubstrate: TLabel;
+    lblTopography: TLabel;
+    lblLayer: TLabel;
+    lblWidth1: TLabel;
+    seLayerThickness: TFloatSpinEdit;
+    seDepth: TFloatSpinEdit;
+    seWidth: TFloatSpinEdit;
+    sbDirUp: TSpeedButton;
+    sbDirDown: TSpeedButton;
     SummaryMemo: TMemo;
     EmissionPointsSeries: TLineSeries;
     Label2: TLabel;
     ResultsPageControl: TPageControl;
-    PageControl2: TPageControl;
+    EmissionPointsPageControl: TPageControl;
     pgSummary: TTabSheet;
     TrajectoryOptionsPanel: TPanel;
     ParamsPanel: TPanel;
@@ -59,6 +83,9 @@ type
     EmissionPointsChart: TChart;
     EmissionPointsSource: TUserDefinedChartSource;
     procedure btnRunSimClick(Sender: TObject);
+    procedure cbAnnularApertureChange(Sender: TObject);
+    procedure cmbAnalyzerTypeChange(Sender: TObject);
+    procedure cmbTopographyChange(Sender: TObject);
     procedure EmissionPointsSourceGetChartDataItem(
       ASource: TUserDefinedChartSource; AIndex: Integer;
       var AItem: TChartDataItem);
@@ -75,17 +102,21 @@ type
     FAborted: Boolean;
     procedure DisplaySummary(ASimulation: TSimulation);
     function GetProjection: TProjection;
+    function GetSelectedAnalyzer: TAnalyzerType;
+    function GetSelectedTopography: TTopoType;
     procedure GUIToParams(var AParams: TSimParams);
     function InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
     procedure LoadParamsFromCfg;
     procedure ParamsToGUI(const AParams: TSimParams);
+    procedure PopulateMaterialsCombo(ACombobox: TCombobox);
     procedure PrepareSim;
     procedure RunSimulation;
     procedure SaveParamsToCfg;
+    procedure UpdateCtrlState(AEnabled: Boolean);
 
     // Event handlers
     procedure CancelHandler(ASimulation: TSimulation; var Cancel: Boolean);
-    procedure DetectionHandler(ASimulation: TSimulation;
+    procedure DetectionHandler({%H-}ASimulation: TSimulation;
       AElectronCount: Integer; const AElectron: TAugerElectron);
     procedure TrajectoryCompleteHandler(Simulation: TSimulation;
       const AElectronID: String; const ATrajectory: TTrajectory);
@@ -112,6 +143,16 @@ var
   TopIntens: Float = 0.0;
   WallIntens: Float = 0.0;
   DepthTol: float = 0.0;
+
+{ Set font style of Groupbox caption to bold, but keep items normal }
+procedure BoldGroup(AControl: TCustomGroupBox);
+var
+  i: Integer;
+begin
+  AControl.Font.Style := [fsBold];
+  for i:=0 to AControl.ControlCount-1 do
+    AControl.Controls[i].Font.Style := [];
+end;
 
 procedure EvalIntensities(const ASimParams: TSimParams; Point: TVector3; dI: Float;
   var TopIntens, BottomIntens, WallIntens: Float);
@@ -176,23 +217,81 @@ begin
     FAborted := false;
     btnRunSim.Caption := 'Abort';
     Caption := APP_CAPTION + ' [running]';
+    Progressbar.Position := 0;
+    Progressbar.Max := sePrimElCount.Value;
+    Progressbar.Show;
+    UpdateCtrlState(false);
     t := Now;
+
     RunSimulation;
     t := Now - t;
+
     FRunning := false;
     if FAborted then
       Caption := APP_CAPTION + ' [aborted]'
     else
       Caption := APP_CAPTION + ' [completed, ' + FormatDateTime('h:nn:ss.zzz', t) + ']';
+    UpdateCtrlState(true);
+    Progressbar.Hide;
     btnRunSim.Caption := 'Run simulation';
   end else
     FAborted := true;
 end;
 
+procedure TMainForm.cbAnnularApertureChange(Sender: TObject);
+begin
+  cmbAnalyzerTypeChange(nil);
+end;
+
 procedure TMainForm.CancelHandler(ASimulation: TSimulation; var Cancel: Boolean);
 begin
+  Progressbar.Position := ASimulation.ElectronSource.NumFired;
   Application.ProcessMessages;
   Cancel := FAborted;
+end;
+
+procedure TMainForm.cmbAnalyzerTypeChange(Sender: TObject);
+var
+  isCMA: Boolean;
+begin
+  isCMA := cmbAnalyzerType.ItemIndex = 0;
+  cbAnnularAperture.Enabled := isCMA and FRunning;
+  lblFrom.Enabled := isCMA and cbAnnularAperture.Checked and FRunning;
+  seSectorFrom.Enabled := lblFrom.Enabled and FRunning;
+  lblTo.Enabled := lblFrom.Enabled and FRunning;
+  seSectorTo.Enabled := lblFrom.Enabled and FRunning;
+  lblDeg.Enabled := lblFrom.Enabled and FRunning;
+  cbUseHoeslerAp.Enabled := isCMA and FRunning;
+end;
+
+procedure TMainForm.cmbTopographyChange(Sender: TObject);
+var
+  topo: TTopoType;
+begin
+  topo := GetSelectedTopography;
+
+  lblWidth.Enabled := (topo <> ttStep) and FRunning;
+  seWidth.Enabled := (topo <> ttStep) and FRunning;
+  sbDirUp.Enabled := (topo = ttStep) and FRunning;
+  sbDirDown.Enabled := sbDirUp.Enabled;
+
+  case topo of
+    ttContactHole:
+      begin
+        lblDepth.Caption := 'Depth (µm)';
+        lblWidth.Caption := 'Diameter (µm)';
+      end;
+    ttStripe:
+      begin
+        lblDepth.Caption := 'Height (µm)';
+        lblWidth.Caption := 'Width (µm)';
+      end;
+    ttStep:
+      begin
+        lblDepth.Caption := 'Height (µm)';
+        lblWidth.Caption := '(not used)';
+      end;
+  end;
 end;
 
 procedure TMainForm.DetectionHandler(ASimulation: TSimulation;
@@ -227,13 +326,17 @@ begin
 end;
 
 procedure TMainForm.DisplaySummary(ASimulation: TSimulation);
+const
+  STEP_DIR: array[TStepDir] of String = ('', 'up', 'down');
 var
   intens: Float;
   src: TElectronSource;
   analyzer: TAnalyzer;
+  sample: TSample;
 begin
   src := ASimulation.ElectronSource;
   analyzer := ASimulation.Analyzer;
+  sample := ASimulation.Sample;
   intens := analyzer.Intensity;
 
   if SummaryMemo.Lines.Count > 0 then
@@ -251,6 +354,15 @@ begin
     SummaryMemo.Lines.Add('    %s', [ANALYZERTYPE_NAME[analyzer.AnalyzerType]]);
   if analyzer.UseHoeslerAp then
     SummaryMemo.Lines.Add('    Hoesler aperture applied');
+  SummaryMemo.Lines.Add('  SAMPLE');
+  SummaryMemo.Lines.Add('    Substrate: %s, Layer: %s', [GetElementName(sample.Substrate.Z, false), GetElementName(sample.Layer.Z, false)]);
+  if sample is TContactHole then
+    SummaryMemo.Lines.Add('    Topography: Contact hole (diameter=%.3f µm, depth=%.3f µm)', [TContactHole(sample).Radius*2, TContactHole(sample).Depth]);
+  if sample is TStripe then
+    SummaryMemo.Lines.Add('    Topography: Stripe (width=%.3f µm, height=%.3f µm)', [TStripe(sample).Width, TStripe(sample).Height]);
+  if sample is TStep then
+    SummaryMemo.Lines.Add('    Topography: Step (height=%.3f µm, %s)', [TStep(sample).Height, STEP_DIR[TStep(sample).Dir]]);
+
   SummaryMemo.Lines.Add('');
 
   SummaryMemo.Lines.Add('RESULTS');
@@ -280,12 +392,24 @@ end;
 procedure TMainForm.FormActivate(Sender: TObject);
 begin
   btnRunSim.Constraints.MinWidth := btnRunSim.Width;
+  ParamsPanel.Constraints.MinHeight := gbSample.Top + gbSample.Height +
+    btnRunSim.BorderSpacing.Top + btnRunSim.Height;
+  Constraints.MinHeight := ParamsPanel.Constraints.MinHeight + 2*ParamsPanel.BorderSpacing.Around;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
+  ResultsPageControl.ActivePageIndex := 0;
+  EmissionPointsPageControl.ActivePageIndex := 0;
   SummaryMemo.Lines.Clear;
   sePrimElCount.MaxValue := MaxInt;
+  PopulateMaterialsCombo(cmbSubstrate);
+  PopulateMaterialsCombo(cmbLayer);
+
+  BoldGroup(gbEGun);
+  BoldGroup(gbAnalyzer);
+  BoldGroup(gbSample);
+  BoldGroup(rgProjection);
 
   LoadParamsFromCfg;
   ParamsToGui(SimParams);
@@ -300,6 +424,16 @@ end;
 function TMainForm.GetProjection: TProjection;
 begin
   Result := TProjection(rgProjection.ItemIndex);
+end;
+
+function TMainForm.GetSelectedAnalyzer: TAnalyzerType;
+begin
+  Result := TAnalyzerType(cmbAnalyzerType.ItemIndex + 1);
+end;
+
+function TMainForm.GetSelectedTopography: TTopoType;
+begin
+  Result := TTopoType(cmbTopography.ItemIndex + 1);
 end;
 
 procedure TMainForm.rgProjectionClick(Sender: TObject);
@@ -330,8 +464,16 @@ begin
   AParams.Focus.Y := seFocusY.Value;
   AParams.Focus.Z := seFocusZ.Value;
 
-  AParams.AnalyzerType := TAnalyzerType(cmbAnalyzerType.ItemIndex);
+  AParams.AnalyzerType := GetSelectedAnalyzer;
   AParams.UseHoeslerAperture := cbUseHoeslerAp.Checked;;
+
+  AParams.SubstrateName := cmbSubstrate.Items[cmbSubstrate.ItemIndex];
+  AParams.LayerName := cmbLayer.Items[cmbLayer.ItemIndex];
+  AParams.LayerThickness := seLayerThickness.Value;
+  AParams.Topography := GetSelectedTopography;
+  AParams.Depth := seDepth.Value;
+  AParams.Width := seWidth.Value;
+  if sbDirUp.Down then AParams.StepDir := sdUp else AParams.StepDir := sdDown;
 end;
 
 function TMainForm.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -422,6 +564,37 @@ begin
 
   cmbAnalyzerType.ItemIndex := ord(AParams.AnalyzerType);
   cbUseHoeslerAp.Checked := AParams.UseHoeslerAperture;
+
+  cmbSubstrate.ItemIndex := cmbSubstrate.Items.IndexOf(AParams.SubstrateName);
+  cmbLayer.ItemIndex := cmbLayer.Items.IndexOf(AParams.LayerName);
+  seLayerThickness.Value := AParams.LayerThickness;
+  cmbTopography.ItemIndex := ord(AParams.Topography) - 1;
+  seDepth.Value := AParams.Depth;
+  seWidth.Value := AParams.Width;
+  if AParams.StepDir = sdUp then sbDirUp.Down := true else sbDirDown.Down := true;
+
+  cmbAnalyzerTypeChange(nil);
+  cmbTopographyChange(nil);
+end;
+
+procedure TMainForm.PopulateMaterialsCombo(AComboBox: TComboBox);
+var
+  L: TMaterialsList;
+  i: Integer;
+begin
+  AComboBox.Items.BeginUpdate;
+  try
+    AComboBox.Items.Clear;
+    L := NewMaterialsList;
+    try
+      for i := 0 to L.Count-1 do
+        AComboBox.Items.Add(GetElementName(TMaterialParams(L[i]).Z, false));
+    finally
+      L.Free;
+    end;
+  finally
+    AComboBox.Items.EndUpdate;
+  end;
 end;
 
 procedure TMainForm.PrepareSim;
@@ -559,7 +732,7 @@ procedure TMainForm.TrajectoryCompleteHandler(Simulation: TSimulation;
 var
   ser: TLineSeries;
   udcs: TUserDefinedChartSource;
-  i, idx: Integer;
+  idx: Integer;
 begin
   SetLength(FTrajectories, Length(FTrajectories) + 1);
   idx := High(FTrajectories);
@@ -605,6 +778,12 @@ begin
   end;
 end;
 
+procedure TMainForm.UpdateCtrlState(AEnabled: Boolean);
+begin
+  gbEGun.Enabled := AEnabled;
+  gbAnalyzer.Enabled := AEnabled;
+  gbSample.Enabled := AEnabled;
+end;
 
 end.
 

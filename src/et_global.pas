@@ -37,6 +37,7 @@ const
   etOK          = 0;
   etIOError     = 1;
   etOutOfMemory = 2;
+  etAborted     = 3;
 
 var
   etError: integer = etOK;

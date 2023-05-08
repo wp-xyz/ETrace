@@ -55,11 +55,11 @@ type
     seBeamDiam: TFloatSpinEdit;
     EmissionPointsChart: TChart;
     EmissionPointsSource: TUserDefinedChartSource;
-    procedure Button1Click(Sender: TObject);
     procedure btnRunSimClick(Sender: TObject);
     procedure EmissionPointsSourceGetChartDataItem(
       ASource: TUserDefinedChartSource; AIndex: Integer;
       var AItem: TChartDataItem);
+    procedure FormActivate(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure rgProjectionClick(Sender: TObject);
@@ -68,6 +68,8 @@ type
   private
     FEmissionPoints: array of TVector3;
     FTrajectories: array of TTrajectory;
+    FRunning: Boolean;
+    FAborted: Boolean;
     function GetProjection: TProjection;
     procedure GUIToParams(var AParams: TSimParams);
     function InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -78,6 +80,7 @@ type
     procedure SaveParamsToCfg;
 
     // Event handlers
+    procedure CancelHandler(Simulation: TSimulation; var Cancel: Boolean);
     procedure DetectionHandler(Simulation: TSimulation;
       AElectronCount: Integer; const AElectron: TAugerElectron);
     procedure TrajectoryCompleteHandler(Simulation: TSimulation;
@@ -95,6 +98,8 @@ implementation
 {$R *.lfm}
 
 const
+  APP_CAPTION = 'Electron Tracer';
+
   TITLE_MASK = '%7s %9s %9s %9s %12s %12s %12s %6s';
   VALUE_MASK = '%7d %9.3f %9.3f %9.3f %12.*f %12.*f %12.*f %6s';
 
@@ -157,14 +162,33 @@ end;
 
 { TMainForm }
 
-procedure TMainForm.Button1Click(Sender: TObject);
+procedure TMainForm.btnRunSimClick(Sender: TObject);
+var
+  t: TDateTime;
 begin
-  RunSimulation;
+  if not FRunning then
+  begin
+    FRunning := true;
+    FAborted := false;
+    btnRunSim.Caption := 'Abort';
+    Caption := APP_CAPTION + ' [running]';
+    t := Now;
+    RunSimulation;
+    t := Now - t;
+    FRunning := false;
+    if FAborted then
+      Caption := APP_CAPTION + ' [aborted]'
+    else
+      Caption := APP_CAPTION + ' [completed, ' + FormatDateTime('h:nn:ss.zzz', t) + ']';
+    btnRunSim.Caption := 'Run simulation';
+  end else
+    FAborted := true;
 end;
 
-procedure TMainForm.btnRunSimClick(Sender: TObject);
+procedure TMainForm.CancelHandler(Simulation: TSimulation; var Cancel: Boolean);
 begin
-  RunSimulation;
+  Application.ProcessMessages;
+  Cancel := FAborted;
 end;
 
 procedure TMainForm.DetectionHandler(Simulation: TSimulation;
@@ -202,8 +226,15 @@ begin
   AItem.Y := FEmissionPoints[AIndex].Y;
 end;
 
+procedure TMainForm.FormActivate(Sender: TObject);
+begin
+  btnRunSim.Constraints.MinWidth := btnRunSim.Width;
+end;
+
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
+  sePrimElCount.MaxValue := MaxInt;
+
   LoadParamsFromCfg;
   ParamsToGui(SimParams);
 end;
@@ -383,6 +414,7 @@ begin
     if seTrajectories.Value > 0 then
       sim.OnTrajectoryComplete := @TrajectoryCompleteHandler;
     sim.OnDetection := @DetectionHandler;
+    sim.OnCancel := @CancelHandler;
     BottomIntens := 0;
     TopIntens := 0;
     WallIntens := 0;
@@ -464,8 +496,7 @@ begin
 end;
 
 procedure TMainForm.TrajectoryCompleteHandler(Simulation: TSimulation;
-  const AElectronID: String;
-  const ATrajectory: TTrajectory);
+  const AElectronID: String; const ATrajectory: TTrajectory);
 var
   ser: TLineSeries;
   udcs: TUserDefinedChartSource;

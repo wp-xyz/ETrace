@@ -6,6 +6,7 @@ object MainForm: TMainForm
   Caption = 'Electron Tracer'
   ClientHeight = 498
   ClientWidth = 912
+  OnActivate = FormActivate
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   LCLVersion = '2.3.0.0'
@@ -268,7 +269,6 @@ object MainForm: TMainForm
         BorderSpacing.Right = 8
         Constraints.MaxWidth = 80
         Constraints.MinWidth = 80
-        MaxValue = 65535
         TabOrder = 0
         Value = 100
       end

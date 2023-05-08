@@ -42,38 +42,13 @@ var
   etError: integer = etOK;
 
 const
-  {
-  ET_ID         = 7000;
-  cmTitleFnt    = ET_ID;
-  cmSubtitleFnt = ET_ID + 1;
-  cmxAxFnt      = ET_ID + 2;
-  cmyAxFnt      = ET_ID + 3;
-
-  cmRadialEval  = ET_ID + 10;
-  cmRadialNorm  = ET_ID + 11;
-  cmRadialDens  = ET_ID + 12;
-
-  cmRadialGraph = 250;
-  cmRadialSave  = 251;
-
-  hyLoadFile    = 100;
-  hyLoadTplFile = 101;
-  hySaveTplFile = 102;
-
-  hyRadialSave  = 120;
-
-  hyTitle       = 200;
-  hySubtitle    = 201;
-  hyXAxLabel    = 202;
-  hyYAxLabel    = 203;
-}
+  CFG_FILE_NAME = 'calc_et.cfg';
   SingleEps     = 1E-4;      { data are stored in single precision }
 
 type
   TSimParams = record
     // general
     zAxis: TVector3;
-    TrajectoryFileName: String;
     // electron source
     PrimaryEnergy: Float;             // keV
     BeamDiameter: Float;              // µm
@@ -100,7 +75,6 @@ const
   DefaultSimParams: TSimParams = (
     // general
     zAxis: (X:0.0; Y:0.0; Z:1.0);
-    TrajectoryFileName: '';
     // electron source
     PrimaryEnergy: 10.0;
     BeamDiameter: 0.3;

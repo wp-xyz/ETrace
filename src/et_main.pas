@@ -66,8 +66,6 @@ type
     procedure TrajectoryGetChartDataItemHandler(ASource: TUserDefinedChartSource;
       AIndex: Integer; var AItem: TChartDataItem);
   private
-    TraceFileName: String;
-    EmPtsFileName: String;
     FEmissionPoints: array of TVector3;
     FTrajectories: array of TTrajectory;
     function GetProjection: TProjection;
@@ -104,56 +102,50 @@ var
   BottomIntens: Float = 0.0;
   TopIntens: Float = 0.0;
   WallIntens: Float = 0.0;
-  EscDepth: float;
+  DepthTol: float = 0.0;
 
-procedure EvalIntensities(const ASimParams: TSimParams; EscDepth: Float;
-  Point: TVector3; dI: Float; var TopIntens, BottomIntens, WallIntens: Float);
+procedure EvalIntensities(const ASimParams: TSimParams; Point: TVector3; dI: Float;
+  var TopIntens, BottomIntens, WallIntens: Float);
 var
   R2: Float;
-  Tol: Float;
 begin
-  Tol := 6 * EscDepth;
-  {
-  Tol := EscDepth + EscDepth;
-  Tol := Tol + Tol + EscDepth;
-  }
   with Point do
   begin
     case ASimParams.Topography of
       ttContactHole :
-        if Equal(Z, 0.0, Tol) then
+        if Equal(Z, 0.0, DepthTol) then
         begin
           R2 := Sqr(0.5 * ASimParams.Width);
-          if LessThan(X*X + Y*Y, R2, Tol) then
+          if LessThan(X*X + Y*Y, R2, DepthTol) then
             BottomIntens := BottomIntens + dI
           else
             TopIntens := TopIntens + dI;
         end else
-        if Equal(Z, -ASimParams.Depth, Tol) then
+        if Equal(Z, -ASimParams.Depth, DepthTol) then
           BottomIntens := BottomIntens + dI
         else
           WallIntens := WallIntens + dI;
 
       ttStripe :
-        if Zero(Z, Tol) and Zero(X, ASimParams.Width*0.5) then
+        if Zero(Z, DepthTol) and Zero(X, ASimParams.Width*0.5) then
           TopIntens := TopIntens + dI
         else
-        if Equal(Z, -ASimParams.Depth, Tol) and not Zero(X, ASimParams.Width*0.5) then
+        if Equal(Z, -ASimParams.Depth, DepthTol) and not Zero(X, ASimParams.Width*0.5) then
           BottomIntens := BottomIntens + dI
         else
           WallIntens := WallIntens + dI;
 
       ttStep :
-        if Zero(X, Tol) then
+        if Zero(X, DepthTol) then
           WallIntens := WallIntens + dI
         else
-        if GreaterThan(X, 0.0, Tol) then
+        if GreaterThan(X, 0.0, DepthTol) then
           case ASimParams.StepDir of
             sdUp   : TopIntens := TopIntens + dI;
             sdDown : BottomIntens := BottomIntens + dI;
           end
         else
-        if LessThan(X, 0.0, Tol) then
+        if LessThan(X, 0.0, DepthTol) then
           case ASimParams.StepDir of
             sdUp   : BottomIntens := BottomIntens + dI;
             sdDown : TopIntens := TopIntens + dI;
@@ -190,7 +182,7 @@ begin
 
   with AElectron do
   begin
-    EvalIntensities(SimParams, EscDepth, Ray.Point, Weight, TopIntens, BottomIntens, WallIntens);
+    EvalIntensities(SimParams, Ray.Point, Weight, TopIntens, BottomIntens, WallIntens);
     MaxIntens := MaxF(BottomIntens, MaxF(TopIntens, WallIntens));
     if MaxIntens < 10 then Decs := 3 else
       if MaxIntens < 100 then Decs := 2 else
@@ -270,12 +262,12 @@ end;
 procedure TMainForm.LoadParamsFromCfg;
 var
   cfg: TCustomIniFile;
-  s: String;
   section: String;
   savedFormatSettings: TFormatSettings;
 begin
   savedFormatSettings := FormatSettings;
-  cfg := TIniFile.Create('calc_et.cfg');
+
+  cfg := TIniFile.Create(CFG_FILE_NAME);
   try
     FormatSettings.DecimalSeparator := '.';
 
@@ -284,8 +276,7 @@ begin
     SimParams.PrimaryEnergy := cfg.ReadFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
     SimParams.BeamDiameter := cfg.ReadFloat(section, 'Beam diameter', SimParams.BeamDiameter);
     SimParams.NumElectrons := cfg.ReadInteger(section, 'NumElectrons', SimParams.NumElectrons);
-    s := cfg.ReadString(section, 'Analyzer type', '');
-    case Uppercase(s) of
+    case Uppercase(cfg.ReadString(section, 'Analyzer type', '')) of
       'CMA', '': SimParams.AnalyzerType := atCMA;
       'CHA': SimParams.AnalyzerType := atCHA;
       else SimParams.AnalyzerType := atNone;
@@ -296,8 +287,7 @@ begin
     SimParams.Focus.X := cfg.ReadFloat(section, 'Focus X', SimParams.Focus.X);
     SimParams.Focus.Y := cfg.ReadFloat(section, 'Focus Y', SimParams.Focus.Y);
     SimParams.Focus.Z := cfg.ReadFloat(section, 'Focus Z', SimParams.Focus.Z);
-    s := cfg.ReadString(section, 'Topography', '');
-    case Uppercase(s) of
+    case Uppercase(cfg.ReadString(section, 'Topography', '')) of
       '',
       'CONTACT HOLE': SimParams.Topography := ttContactHole;
       'STRIPE': SimParams.Topography := ttStripe;
@@ -318,8 +308,7 @@ begin
       ttStep:
         begin
           SimParams.Depth := cfg.ReadFloat(section, 'Step height', SimParams.Depth);
-          s := cfg.ReadString(section, 'Step dir', '');
-          case Uppercase(s) of
+          case Uppercase(cfg.ReadString(section, 'Step dir', '')) of
             'UP', '': SimParams.StepDir := sdUp;
             'DOWN': SimParams.StepDir := sdDown;
           end;
@@ -329,9 +318,6 @@ begin
     SimParams.LayerName := cfg.ReadString(section, 'Layer material', SimParams.LayerName);
     SimParams.LayerThickness := cfg.ReadFloat(section, 'LayerThickness', SimParams.LayerThickness);
     SimParams.OnlyDirect := cfg.ReadBool(section, 'Only Direct', SimParams.OnlyDirect);
-    SimParams.TrajectoryFileName := cfg.ReadString(section, 'Trajectory file name', SimParams.TrajectoryFileName);
-    TraceFileName := cfg.ReadString(section, 'Trajectory file name', TraceFileName);
-    EmPtsFileName := cfg.ReadString(section, 'Emission points file name', EmPtsFileName)
 
   finally
     cfg.Free;
@@ -400,7 +386,7 @@ begin
     BottomIntens := 0;
     TopIntens := 0;
     WallIntens := 0;
-    EscDepth := sim.EscDepth;
+    DepthTol := MaxF(sim.Layer.EscapeDepth, sim.Substrate.EscapeDepth) * 6;
     sim.Execute(sePrimElCount.Value);
   finally
     sim.Free;
@@ -415,7 +401,7 @@ var
   savedFormatSettings: TFormatSettings;
 begin
   savedFormatSettings := FormatSettings;
-  cfg := TIniFile.Create('calc_et.cfg');
+  cfg := TIniFile.Create(CFG_FILE_NAME);
   try
     FormatSettings.DecimalSeparator := '.';
 
@@ -470,9 +456,6 @@ begin
     cfg.WriteString(section, 'Layer material', SimParams.LayerName);
     cfg.WriteFloat(section, 'LayerThickness', SimParams.LayerThickness);
     cfg.WriteBool(section, 'Only Direct', SimParams.OnlyDirect);
-    cfg.WriteString(section, 'Trajectory file name', SimParams.TrajectoryFileName);
-    cfg.WriteString(section, 'Trajectory file name', TraceFileName);
-    cfg.WriteString(section, 'Emission points file name', EmPtsFileName)
 
   finally
     cfg.Free;

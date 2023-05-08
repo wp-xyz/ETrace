@@ -23,10 +23,13 @@ type
 
   TMainForm = class(TForm)
     btnRunSim: TButton;
+    cbUseHoeslerAp: TCheckBox;
+    SummaryMemo: TMemo;
     EmissionPointsSeries: TLineSeries;
     Label2: TLabel;
     ResultsPageControl: TPageControl;
     PageControl2: TPageControl;
+    pgSummary: TTabSheet;
     TrajectoryOptionsPanel: TPanel;
     ParamsPanel: TPanel;
     pgEmissionPoints: TTabSheet;
@@ -36,9 +39,9 @@ type
     pgPlot: TTabSheet;
     pgValues: TTabSheet;
     TrajectoriesChart: TChart;
-    ComboBox1: TComboBox;
+    cmbAnalyzerType: TComboBox;
     gbAnalyzer: TGroupBox;
-    Label1: TLabel;
+    lblAnalyzerType: TLabel;
     lblBeamDiam: TLabel;
     lblFocusX: TLabel;
     lblFocusY: TLabel;
@@ -70,6 +73,7 @@ type
     FTrajectories: array of TTrajectory;
     FRunning: Boolean;
     FAborted: Boolean;
+    procedure DisplaySummary(ASimulation: TSimulation);
     function GetProjection: TProjection;
     procedure GUIToParams(var AParams: TSimParams);
     function InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -80,8 +84,8 @@ type
     procedure SaveParamsToCfg;
 
     // Event handlers
-    procedure CancelHandler(Simulation: TSimulation; var Cancel: Boolean);
-    procedure DetectionHandler(Simulation: TSimulation;
+    procedure CancelHandler(ASimulation: TSimulation; var Cancel: Boolean);
+    procedure DetectionHandler(ASimulation: TSimulation;
       AElectronCount: Integer; const AElectron: TAugerElectron);
     procedure TrajectoryCompleteHandler(Simulation: TSimulation;
       const AElectronID: String; const ATrajectory: TTrajectory);
@@ -185,13 +189,13 @@ begin
     FAborted := true;
 end;
 
-procedure TMainForm.CancelHandler(Simulation: TSimulation; var Cancel: Boolean);
+procedure TMainForm.CancelHandler(ASimulation: TSimulation; var Cancel: Boolean);
 begin
   Application.ProcessMessages;
   Cancel := FAborted;
 end;
 
-procedure TMainForm.DetectionHandler(Simulation: TSimulation;
+procedure TMainForm.DetectionHandler(ASimulation: TSimulation;
   AElectronCount: Integer; const AElectron: TAugerElectron);
 const
   CROSS: array[boolean] of String[1] = (' ', 'X');
@@ -199,11 +203,14 @@ var
   Decs: Byte;
   MaxIntens: Float;
 begin
+  // Store in emission points array
   SetLength(FEmissionPoints, Length(FEmissionPoints) + 1);
   FEmissionPoints[High(FEmissionPoints)] := AElectron.Ray.Point;
 
+  // Update the chart
   EmissionPointsSource.PointsNumber := Length(FEmissionPoints);
 
+  // Update the memo
   with AElectron do
   begin
     EvalIntensities(SimParams, Ray.Point, Weight, TopIntens, BottomIntens, WallIntens);
@@ -217,6 +224,50 @@ begin
         AElectronCount, X, Y, Z, decs, TopIntens, decs, WallIntens, decs, BottomIntens, CROSS[GenByBkScEl]
       ]);
   end;
+end;
+
+procedure TMainForm.DisplaySummary(ASimulation: TSimulation);
+var
+  intens: Float;
+  src: TElectronSource;
+  analyzer: TAnalyzer;
+begin
+  src := ASimulation.ElectronSource;
+  analyzer := ASimulation.Analyzer;
+  intens := analyzer.Intensity;
+
+  if SummaryMemo.Lines.Count > 0 then
+    SummaryMemo.Lines.Add('------------------------------------------------------------------');
+
+  SummaryMemo.Lines.Add('PARAMETERS');
+  SummaryMemo.Lines.Add('  ELECTRON SOURCE');
+  SummaryMemo.Lines.Add('    Primary energy: %.3f keV', [src.Energy]);
+  SummaryMemo.Lines.Add('    Beam diameter: %.3f µm', [src.BeamRadius*2]);
+  SummaryMemo.Lines.Add('    Focus: X=%.3f µm, Y=%.3f µm', [src.FocusedPoint.X, src.FocusedPoint.Y]);
+  SummaryMemo.Lines.Add('  ANALYZER');
+  if analyzer.Restricted then
+    SummaryMemo.Lines.Add('    %s, restricted', [ANALYZERTYPE_NAME[analyzer.AnalyzerType]])
+  else
+    SummaryMemo.Lines.Add('    %s', [ANALYZERTYPE_NAME[analyzer.AnalyzerType]]);
+  if analyzer.UseHoeslerAp then
+    SummaryMemo.Lines.Add('    Hoesler aperture applied');
+  SummaryMemo.Lines.Add('');
+
+  SummaryMemo.Lines.Add('RESULTS');
+  SummaryMemo.Lines.Add('  ELECTRON SOURCE');
+  SummaryMemo.Lines.Add('    Number of primary electrons: %20d', [src.NumFired]);
+  SummaryMemo.Lines.Add('  ANALYZER');
+  SummaryMemo.Lines.Add('    Number of Auger electrons:   %20d', [ASimulation.Analyzer.Detected]);
+  SummaryMemo.Lines.Add('    Totel intensity:             %23.2f (%6.2f%%)', [intens, 100.0]);
+  if intens <> 0 then
+  begin
+    SummaryMemo.Lines.Add('    Top surface intensity:       %23.2f (%6.2f%%)', [TopIntens, TopIntens / intens * 100.0]);
+    SummaryMemo.Lines.Add('    Bottom surface intensity:    %23.2f (%6.2f%%)', [BottomIntens, BottomIntens / intens * 100.0]);
+    SummaryMemo.Lines.Add('    Sidewall intensity:          %23.2f (%6.2f%%)', [WallIntens, WallIntens / intens * 100.0]);
+  end;
+
+  SummaryMemo.SelStart := Length(SummaryMemo.Text)-1;
+  SummaryMemo.SelLength := 0;
 end;
 
 procedure TMainForm.EmissionPointsSourceGetChartDataItem(
@@ -233,6 +284,7 @@ end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
+  SummaryMemo.Lines.Clear;
   sePrimElCount.MaxValue := MaxInt;
 
   LoadParamsFromCfg;
@@ -277,6 +329,9 @@ begin
   AParams.Focus.X := seFocusX.Value;
   AParams.Focus.Y := seFocusY.Value;
   AParams.Focus.Z := seFocusZ.Value;
+
+  AParams.AnalyzerType := TAnalyzerType(cmbAnalyzerType.ItemIndex);
+  AParams.UseHoeslerAperture := cbUseHoeslerAp.Checked;;
 end;
 
 function TMainForm.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -364,6 +419,9 @@ begin
   seFocusX.Value := AParams.Focus.X;
   seFocusY.Value := AParams.Focus.Y;
   seFocusZ.Value := AParams.Focus.Z;
+
+  cmbAnalyzerType.ItemIndex := ord(AParams.AnalyzerType);
+  cbUseHoeslerAp.Checked := AParams.UseHoeslerAperture;
 end;
 
 procedure TMainForm.PrepareSim;
@@ -420,6 +478,7 @@ begin
     WallIntens := 0;
     DepthTol := MaxF(sim.Layer.EscapeDepth, sim.Substrate.EscapeDepth) * 6;
     sim.Execute(sePrimElCount.Value);
+    DisplaySummary(sim);
   finally
     sim.Free;
   end;

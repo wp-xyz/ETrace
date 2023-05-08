@@ -43,6 +43,7 @@ var
   etError: integer = etOK;
 
 const
+  ANALYZERTYPE_NAME: array[TAnalyzerType] of String = ('(none)', 'CMA', 'CHA');
   CFG_FILE_NAME = 'calc_et.cfg';
   SingleEps     = 1E-4;      { data are stored in single precision }
 

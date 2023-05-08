@@ -15,14 +15,34 @@ object MainForm: TMainForm
     Height = 482
     Top = 8
     Width = 651
-    ActivePage = pgEmissionPoints
+    ActivePage = pgTrajectories
     Align = alClient
     BorderSpacing.Left = 8
     BorderSpacing.Top = 8
     BorderSpacing.Right = 8
     BorderSpacing.Bottom = 8
-    TabIndex = 0
+    TabIndex = 2
     TabOrder = 0
+    object pgSummary: TTabSheet
+      Caption = 'Summary'
+      ClientHeight = 454
+      ClientWidth = 643
+      object SummaryMemo: TMemo
+        Left = 6
+        Height = 442
+        Top = 6
+        Width = 631
+        Align = alClient
+        BorderSpacing.Around = 6
+        Font.Height = -12
+        Font.Name = 'Courier New'
+        ParentFont = False
+        ReadOnly = True
+        ScrollBars = ssAutoVertical
+        TabOrder = 0
+        WordWrap = False
+      end
+    end
     object pgEmissionPoints: TTabSheet
       Caption = 'Emission points'
       ClientHeight = 454
@@ -296,7 +316,7 @@ object MainForm: TMainForm
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 4
         DecimalPlaces = 1
-        MaxValue = 30
+        MaxValue = 100
         MinValue = 1
         TabOrder = 1
         Value = 10
@@ -419,37 +439,60 @@ object MainForm: TMainForm
     end
     object gbAnalyzer: TGroupBox
       Left = 0
-      Height = 105
+      Height = 74
       Top = 202
       Width = 237
       Align = alTop
+      AutoSize = True
       BorderSpacing.Top = 16
       Caption = 'Analyzer'
-      ClientHeight = 85
+      ClientHeight = 54
       ClientWidth = 233
       TabOrder = 1
-      object Label1: TLabel
-        Left = 19
+      object lblAnalyzerType: TLabel
+        AnchorSideLeft.Control = gbAnalyzer
+        AnchorSideTop.Control = cmbAnalyzerType
+        AnchorSideTop.Side = asrCenter
+        Left = 16
         Height = 15
-        Top = 6
+        Top = 4
         Width = 24
+        BorderSpacing.Left = 16
         Caption = 'Type'
       end
-      object ComboBox1: TComboBox
-        Left = 79
+      object cmbAnalyzerType: TComboBox
+        AnchorSideRight.Control = gbAnalyzer
+        AnchorSideRight.Side = asrBottom
+        Left = 145
         Height = 23
-        Top = 3
+        Top = 0
         Width = 80
+        Anchors = [akTop, akRight]
+        BorderSpacing.Right = 8
         Constraints.MaxWidth = 80
         Constraints.MinWidth = 80
         ItemHeight = 15
+        ItemIndex = 0
         Items.Strings = (
           'CMA'
           'CHA'
           'Other'
         )
         TabOrder = 0
-        Text = 'ComboBox1'
+        Text = 'CMA'
+      end
+      object cbUseHoeslerAp: TCheckBox
+        AnchorSideLeft.Control = lblAnalyzerType
+        AnchorSideTop.Control = cmbAnalyzerType
+        AnchorSideTop.Side = asrBottom
+        Left = 16
+        Height = 19
+        Top = 27
+        Width = 121
+        BorderSpacing.Top = 4
+        BorderSpacing.Bottom = 8
+        Caption = 'Use Hösler aperture'
+        TabOrder = 1
       end
     end
     object btnRunSim: TButton

@@ -68,6 +68,7 @@ type
     property Intensity: Float read FIntensity;
     property PolarAngle: Double read FPolarAngle;      // degrees
     property AzimuthAngle: Double read FAzimuthAngle;  // degrees
+    property Restricted: Boolean read FRestricted;
   end;
 
   TMaterialParams = class
@@ -669,6 +670,8 @@ constructor TSample.Create(ASubstrate, ALayer: TMaterial;
   APrimaryEnergy: Float; ALayerThickness: float);
 const
   nMax = 2000;
+var
+  AugerCrossSection: Float;
 begin
   FLayer := ALayer;
   FSubstrate := ASubstrate;
@@ -684,13 +687,19 @@ begin
   else
     ChangeMaterial(FLayer);
 
-  with FSubstrate do
-    IntensFact := 1.0 / (ElemDensity * EscapeDepth * CalcAugerCrossSection(FPrimaryEnergy));
   { Every detected Auger electrons adds the amount
-           Intensfact * AugerCrossSctn * EscapeDepth
+       Intensfact * AugerCrossSctn * EscapeDepth
     to the total intensity. This value becomes a bit more handy by multiplication
     with the factor <IntensFact> (Normalization to the ionization cross-section
     at the primary energy, substrate density and escape depth of the substrate. }
+  with FSubstrate do
+  begin
+    AugerCrossSection := CalcAugerCrossSection(FPrimaryEnergy);
+    if AugerCrossSection <> 0 then
+      IntensFact := 1.0 / (ElemDensity * EscapeDepth * AugerCrossSection)
+    else
+      IntensFact := 0.0;
+  end;
 end;
 
 procedure TSample.ChangeMaterial(NewMaterial: TMaterial);

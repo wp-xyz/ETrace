@@ -70,11 +70,6 @@
         <UnitName Value="et_Global"/>
       </Unit>
       <Unit>
-        <Filename Value="src\et_file.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="et_File"/>
-      </Unit>
-      <Unit>
         <Filename Value="src\MathUnits\mmatrix.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="MMatrix"/>
@@ -83,11 +78,6 @@
         <Filename Value="src\et_objects.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="et_Objects"/>
-      </Unit>
-      <Unit>
-        <Filename Value="src\et_info.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="et_Info"/>
       </Unit>
       <Unit>
         <Filename Value="src\et_sim.pas"/>

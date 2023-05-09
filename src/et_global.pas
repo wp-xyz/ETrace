@@ -4,10 +4,9 @@ unit et_Global;
 
 interface
 
-uses
-  MGlobal;
-
 type
+  Float = double;
+
   TDataType = (dtNone, dtTraj, dtEmPts);
 
   TTopoType = (ttNone, ttContactHole, ttStripe, ttStep);
@@ -108,9 +107,6 @@ implementation
 
 function GetError: Integer;
 begin
-  if mError <> mOK then
-    Result := mError
-  else
   if etError <> etOK then
     Result := etError
   else

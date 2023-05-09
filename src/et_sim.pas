@@ -5,7 +5,7 @@ unit et_Sim;
 interface
 
 uses
-  Classes, SysUtils, MGlobal, MFunc,
+  Classes, SysUtils, Math,
   et_Global, et_Math, et_Objects;
 
 type
@@ -261,7 +261,7 @@ begin
   if (FErrorCode <> etOK) or FAborted then
     exit;
 
-  minEnergy := MinF(FLayer.CoreLevelEnergy, FSubstrate.CoreLevelEnergy);
+  minEnergy := Min(FLayer.CoreLevelEnergy, FSubstrate.CoreLevelEnergy);
   isPrimaryElectron := (ASecCount = 0);
   if FSample.Intersection(Electron.Ray, Point, isPrimaryElectron) then
   begin

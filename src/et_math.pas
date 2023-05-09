@@ -6,11 +6,7 @@ interface
 
 uses
   Math,
-//  MGlobal, MFunc, MRoots,
   et_Global;
-
-type
-  Float = Double;
 
 const
   FloatEps  = 3.4E-9;

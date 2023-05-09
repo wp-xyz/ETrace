@@ -50,29 +50,9 @@
         <UnitName Value="et_Math"/>
       </Unit>
       <Unit>
-        <Filename Value="src\MathUnits\mglobal.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="MGlobal"/>
-      </Unit>
-      <Unit>
-        <Filename Value="src\MathUnits\mroots.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="MRoots"/>
-      </Unit>
-      <Unit>
-        <Filename Value="src\MathUnits\mfunc.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="MFunc"/>
-      </Unit>
-      <Unit>
         <Filename Value="src\et_global.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="et_Global"/>
-      </Unit>
-      <Unit>
-        <Filename Value="src\MathUnits\mmatrix.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="MMatrix"/>
       </Unit>
       <Unit>
         <Filename Value="src\et_objects.pas"/>
@@ -94,13 +74,18 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="src;src\MathUnits"/>
+      <OtherUnitFiles Value="src"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
       <Debugging>
         <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
     </Linking>
   </CompilerOptions>
   <Debugging>

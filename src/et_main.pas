@@ -6,16 +6,14 @@ interface
 
 uses
   // RTL, FCL
-  Classes, SysUtils, IniFiles,
+  Classes, SysUtils, IniFiles, Math,
   // LCL
   Forms, Controls, Graphics, Dialogs, StdCtrls,
   Spin, ExtCtrls, ComCtrls, Buttons,
   // TAChart
   TAGraph, TACustomSource, TACustomSeries, TASeries, TASources,
-  // Math lib
-  MGlobal, MFunc,
   // project units
-  et_Global, et_Objects, et_Sim;
+  et_Global, et_Math, et_Objects, et_Sim;
 
 type
 
@@ -313,7 +311,7 @@ begin
   with AElectron do
   begin
     EvalIntensities(SimParams, Ray.Point, Weight, TopIntens, BottomIntens, WallIntens);
-    MaxIntens := MaxF(BottomIntens, MaxF(TopIntens, WallIntens));
+    MaxIntens := Max(BottomIntens, Max(TopIntens, WallIntens));
     if MaxIntens < 10 then Decs := 3 else
       if MaxIntens < 100 then Decs := 2 else
         if MaxIntens < 1000 then Decs := 1 else
@@ -649,7 +647,7 @@ begin
     BottomIntens := 0;
     TopIntens := 0;
     WallIntens := 0;
-    DepthTol := MaxF(sim.Layer.EscapeDepth, sim.Substrate.EscapeDepth) * 6;
+    DepthTol := Max(sim.Layer.EscapeDepth, sim.Substrate.EscapeDepth) * 6;
     sim.Execute(sePrimElCount.Value);
     DisplaySummary(sim);
   finally

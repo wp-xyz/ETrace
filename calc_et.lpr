@@ -10,8 +10,8 @@ uses
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, tachartlazaruspkg, et_Main, et_math, MGlobal, MRoots, MFunc, et_Global,
-  MMatrix, et_Objects, et_Sim;
+  Forms, tachartlazaruspkg, et_Main, et_math, et_Global,
+  et_Objects, et_Sim;
 
 {$R *.res}
 

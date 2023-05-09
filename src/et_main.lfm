@@ -841,7 +841,7 @@ object MainForm: TMainForm
   end
   object EmissionPointsSource: TUserDefinedChartSource
     OnGetChartDataItem = EmissionPointsSourceGetChartDataItem
-    Left = 544
-    Top = 256
+    Left = 624
+    Top = 200
   end
 end

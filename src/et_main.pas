@@ -562,7 +562,7 @@ begin
   seFocusY.Value := AParams.Focus.Y;
   seFocusZ.Value := AParams.Focus.Z;
 
-  cmbAnalyzerType.ItemIndex := ord(AParams.AnalyzerType);
+  cmbAnalyzerType.ItemIndex := ord(AParams.AnalyzerType) + 1;
   cbUseHoeslerAp.Checked := AParams.UseHoeslerAperture;
 
   cmbSubstrate.ItemIndex := cmbSubstrate.Items.IndexOf(AParams.SubstrateName);

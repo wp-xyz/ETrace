@@ -5,20 +5,31 @@ unit et_Math;
 interface
 
 uses
-  MGlobal, MFunc, MRoots,
+  Math,
+//  MGlobal, MFunc, MRoots,
   et_Global;
 
-const
-  ETMathID = 31000;
+type
+  Float = Double;
 
 const
-  OneThird  = 1.0/3;
-  TwoThirds = 2.0/3;
+  FloatEps  = 3.4E-9;
+  Pi_2      = 1.5707963267948966192313;    // pi/2
+  TwoPi     = 6.2831853071795864769253;    // 2*pi
+  FourPi    = 12.5663706143591729538506;   // 4*pi
+  OneThird  = 1.0/3;                       // 1/3
+  TwoThirds = 2.0/3;                       // 2/3
 
-function Random_Gauss: float;
-function Random_Cos: float;
-
+function Between(x, lo, hi, Tol: Float): boolean;
+function Equal(x, y, Tol: Float): Boolean;
+function GreaterThan(x, y, tol: Float): Boolean;
+function LessThan(x, y, tol: Float): Boolean;
+function Random_Gauss: Float;
+function Random_Cos: Float;
+function SqrSolve(p, q: float; var x1, x2: float): boolean;
 function SqrSolve(a, b, c: float; var x1, x2: float): boolean;
+procedure SwapFloat(var x, y: Float);
+function Zero(x, Tol: Float): Boolean;
 
 procedure VecAssign(var A: TVector3; x, y, z: float);
 function ValidVector(V: TVector3): boolean;
@@ -47,6 +58,46 @@ procedure CylToCart(rho, phi: float; var x, y: float);
 
 
 implementation
+
+{ Returns true, if <x> is between the limits <lo> and <hi>. Equality is not
+  considered. }
+function Between(x, lo, hi, Tol: Float): boolean;
+begin
+  Result := (x > lo + Tol) and (x < Hi - Tol);
+end;
+
+{ Returns true, when the two number X and Y are equal within the specified
+  tolerance. Avoids rounding errors. }
+function Equal(x, y, Tol: Float): boolean;
+begin
+  Result := abs(x - y) < Tol;
+end;
+
+function GreaterThan(x, y, tol: Float): Boolean;
+begin
+  Result := (x > y) and not Equal(x, y, tol);
+end;
+
+function LessThan(x, y, tol: Float): Boolean;
+begin
+  Result := (x < y) and not Equal(x, y, tol);
+end;
+
+{ Exchanges the values x and y }
+procedure SwapFloat(var x, y: Float);
+var
+  tmp: Float;
+begin
+  tmp := x;
+  x := y;
+  y := tmp;
+end;
+
+{ Returns true when the number x is zero within the specified tolerance. }
+function Zero(X, Tol: Float): Boolean;
+begin
+  Zero := Equal(X, 0.0, Tol);
+end;
 
 (****************************************************************************)
 (*                          Random numbers                                  *)
@@ -95,6 +146,41 @@ end;
 (*                          Solving equations                               *)
 (****************************************************************************)
 
+{ Solves the square equation x² + px + q = 0 and returns the solutions in
+  x1 and x2. In case of a double solution, x1=x2. If no real solution exists,
+  the function value is false. The complex solution, in this case, then is
+  x1 +/- i x2.
+  The algorithm is from Gander, Computer-Mathematik, Birkhäuser Verlag, p25ff
+  and avoids numerical extinction and floating point overflow in case of very
+  large |p|. }
+function SqrSolve(p, q: float; var x1, x2: float): boolean;
+var
+  discr: float;   { Discriminant }
+  fac: float;
+begin
+  if abs(p) > 1.0 then
+  begin
+    fac := abs(p);
+    discr := 0.25 - q/p/p;   { double division to avoid overflow }
+  end else
+  begin
+    fac := 1.0;
+    discr := sqr(0.5*p) - q;
+  end;
+  if discr < 0.0 then
+  begin
+    x1 := -0.5*p;
+    x2 := fac * sqrt(-discr);
+    result := false;
+  end else
+  begin
+    x1 := abs(p*0.5) + fac * sqrt(discr);
+    if p > 0 then x1 := -x1;
+    if x1=0.0 then x2 := 0.0 else x2 := q/x1;   { Vieta theorem }
+    Result := true;
+  end;
+end;
+
 { Returns in x1 and x2 the real solution of the square equation ax² + bx + c = 0.
   If there is no real solution the function value becomes false. In case of
   a double root, x1 and x2 are equal. }
@@ -116,12 +202,12 @@ begin
   begin
     p := b/a;
     q := c/a;
-    ok := MRoots.SqrSolve(p,q, x1,x2);
+    ok := SqrSolve(p,q, x1,x2);
   end;
   if not ok then
   begin
-    x1 := mEmpty;
-    x2 := mEmpty;
+    x1 := NaN;
+    x2 := NaN;
   end;
   Result := ok;
 end;
@@ -143,7 +229,8 @@ end;
   there is no intersection of the line with the geometric object. }
 function ValidVector(V: TVector3): boolean;
 begin
-  Result := (V.X <> mEmpty) and (V.Y <> mEmpty) and (V.Z <> mEmpty);
+//  Result := (V.X <> mEmpty) and (V.Y <> mEmpty) and (V.Z <> mEmpty);
+  Result := not IsNaN(V.X) and not IsNaN(V.Y) and not IsNaN(V.Z);
 end;
 
 { Calculates the dot product of the vector A and B. }
@@ -285,8 +372,8 @@ var
   V: TVector3;
   parall: float;
 begin
-  VecAssign(Point, mEmpty, mEmpty, mEmpty);
-  Result := mEmpty;
+  VecAssign(Point, NaN, NaN, NaN);
+  Result := NaN;
 
   VecSub(Plane.Point, Ray.Point, V);
   parall := DotProduct(Plane.Dir, Ray.Dir);
@@ -303,8 +390,8 @@ begin
   end;
   if Zero(Lambda,FloatEps) or (lambda<0.0) then
   begin
-    VecAssign(Point, mEmpty, mEmpty, mEmpty);
-    Result := mEmpty;
+    VecAssign(Point, NaN, NaN, NaN);
+    Result := NaN;
   end;
 end;
 
@@ -339,8 +426,8 @@ function rayXcyl(ray: TRay; r: float; var Point:TVector3; FarPoint: boolean): Fl
 var
   A, B, C, my, my1: float;
 begin
-  VecAssign(Point, mEmpty, mEmpty, mEmpty);
-  Result := mEmpty;
+  VecAssign(Point, NaN, NaN, NaN);
+  Result := NaN;
 
   with Ray do
   begin
@@ -353,10 +440,10 @@ begin
   begin
     if (my < 0.0) and (my1 < 0.0) then Exit;
     if FarPoint then
-      my := MaxF(my, my1)
+      my := Max(my, my1)
     else
     if (my > 0.0) and (my1 > 0.0) then
-      my := MinF(my,my1)
+      my := Min(my,my1)
     else
     if my <= 0.0 then
       my := my1;
@@ -368,7 +455,7 @@ end;
 
 
 (****************************************************************************)
-(*                         Coordiante systems                               *)
+(*                         Coordinate systems                               *)
 (****************************************************************************)
 
 { Converts the cartesian coordinates (x, y, z) (unit size) to spherical
@@ -384,7 +471,7 @@ begin
      theta := ArcCos(z);
 
   if Equal(x, 0.0, FloatEps) then
-    phi := Sgn(y)*Pi_2
+    phi := Sign(y)*Pi_2
   else
   if (x > 0.0) then
     phi := ArcTan(y/x)

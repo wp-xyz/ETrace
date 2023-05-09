@@ -5,8 +5,8 @@ unit et_Objects;
 interface
 
 uses
-  Classes, Contnrs, SysUtils,
-  MGlobal, MFunc,
+  Classes, Contnrs, SysUtils, Math,
+ // MGlobal, MFunc,
   et_Global, et_Math;
 
 const
@@ -156,11 +156,11 @@ type
   public
     constructor Create(ASubstrate, ALayer: TMaterial;
       APrimaryEnergy, ALayerThickness, ARadius, ADepth: float);
-    function    InHole(Point: TVector3): Boolean;
-    function    Intersection(Ray: TRay; var Point: TVector3; FromOutside: Boolean): Boolean; override;
-    function    OnSurface(Point: TVector3): Boolean; override;
-    function    Outside(Point: TVector3): boolean; override;
-    procedure   SurfNormal(Point: TVector3; var Normal: TVector3); override;
+    function  InHole(Point: TVector3): Boolean;
+    function  Intersection(Ray: TRay; var Point: TVector3; FromOutside: Boolean): Boolean; override;
+    function  OnSurface(Point: TVector3): Boolean; override;
+    function  Outside(Point: TVector3): boolean; override;
+    procedure SurfNormal(Point: TVector3; var Normal: TVector3); override;
     property Depth: Float read FDepth;
     property Radius: Float read FRadius;
   end;
@@ -172,10 +172,10 @@ type
   public
     constructor Create(ASubstrate, ALayer: TMaterial;
       APrimaryEnergy, ALayerThickness, AWidth, AHeight: float);
-    function    Intersection(Ray: TRay; var Point: TVector3; FromOutside: boolean): Boolean; override;
-    function    OnSurface(Point: TVector3): Boolean; override;
-    function    Outside(Point: TVector3): Boolean; override;
-    procedure   SurfNormal(Point: TVector3; var Normal: TVector3); override;
+    function  Intersection(Ray: TRay; var Point: TVector3; FromOutside: boolean): Boolean; override;
+    function  OnSurface(Point: TVector3): Boolean; override;
+    function  Outside(Point: TVector3): Boolean; override;
+    procedure SurfNormal(Point: TVector3; var Normal: TVector3); override;
 
     property Height: Float read FHeight;
     property Width: Float read FWidth;
@@ -188,10 +188,10 @@ type
   public
     constructor Create(ASubstrate, ALayer: TMaterial;
       APrimaryEnergy, ALayerThickness, AHeight: Float; ADir: TStepDir);
-    function    Intersection(Ray: TRay; var Point: TVector3; FromOutside: Boolean): Boolean; override;
-    function    OnSurface(Point: TVector3) : BOOLEAN; override;
-    function    Outside(Point: TVector3) : BOOLEAN; override;
-    procedure   SurfNormal(Point: TVector3; var Normal: TVector3); override;
+    function  Intersection(Ray: TRay; var Point: TVector3; FromOutside: Boolean): Boolean; override;
+    function  OnSurface(Point: TVector3) : BOOLEAN; override;
+    function  Outside(Point: TVector3) : BOOLEAN; override;
+    procedure SurfNormal(Point: TVector3; var Normal: TVector3); override;
 
     property Dir: TStepDir read FDir;
     property Height: Float read FHeight;
@@ -546,7 +546,7 @@ end;
 
 function NewMaterialsList: TMaterialsList;
 begin
-  Result := TMaterialsList.Create(true); //New(PMaterialCollection, Init(50,10));
+  Result := TMaterialsList.Create(true);
 
   with Result do
   begin
@@ -568,6 +568,7 @@ begin
     Add(NewMaterial(42.0,  95.9, 10.2, 2.867, 2038));  { Mo }   { Eb correct ? }
 
   { Complete energies here !!!
+
     Add(NewMaterial($$$$,  $$$$, $$$$, 1.839, 1612));  { Si3N4 }
     Add(NewMaterial($$$$,  $$$$, $$$$, 1.487, 1388));  { Al2O3 }
     Add(NewMaterial(12.0,  24.3, 1.74, $$$$$, 1186));  { Mg }
@@ -918,7 +919,7 @@ begin
 
   // Intersection with cylinder
   dc := rayXcyl(ray, Radius, Point, FromOutside);
-  if (dc <> mEmpty) and Between(Point.Z, Depth, 0.0, FloatEps) then
+  if not IsNaN(dc) and Between(Point.Z, Depth, 0.0, FloatEps) then
   begin
     Result := true;
     exit;
@@ -928,7 +929,7 @@ begin
   Plane.Dir := SimParams.zAxis;
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);
   dt := rayXplane(ray, Plane, Point);
-  if (dt <> mEmpty) and GreaterThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
+  if not IsNaN(dt) and GreaterThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
   begin
     Result := true;
     exit;
@@ -937,43 +938,14 @@ begin
   // Intersection with bottom plan (z = Depth)
   Plane.Point.Z := Depth;
   db := rayXplane(ray, Plane, Point);
-  if (db <> mEmpty) and LessThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
+  if not IsNaN(db) and LessThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
   begin
     Result := true;
     exit;
   end;
 
   Result := false;
-  VecAssign(Point, mEmpty, mEmpty, mEmpty);
-         (*
-  R2 := Sqr(radius);
-  dc := rayXcyl(ray, Radius, Point, FromOutside);         { Cylinder }
-  if (dc <> mEmpty) and (not Between(Point.Z, Depth, 0.0, FloatEps)) then
-    dc := mEmpty;
-
-  Plane.Dir := zAxis;                                     { upper-most plane }
-  VecAssign(Plane.Point, 0.0, 0.0, 0.0);
-  dt := rayXplane(ray, Plane, Point);
-  if (dt <> mEmpty) and LessThan(Sqr(Point.X) + Sqr(Point.Y), R2, FloatEps) then
-    dt := mEmpty;
-
-  Plane.Point.Z := Depth;                                 { lower plane }
-  db := rayXplane(ray, Plane, Point);
-  if (db <> mEmpty) and GreaterThan(Sqr(Point.X) + Sqr(Point.Y), R2, FloatEps) then
-    db := mEmpty;
-
-  dc := MinF(dc, MinF(dt, db));
-  if dc <> mEmpty then
-  begin
-    VecMulSc(Ray.Dir, dc);
-    VecAdd(Ray.Point, Ray.Dir, Point);
-    Result := true;
-  end else
-  begin
-    VecAssign(Point, mEmpty, mEmpty, mEmpty);
-    Result := false;
-  end;
-  *)
+  VecAssign(Point, NaN, NaN, NaN);
 end;
 
 function TContactHole.OnSurface(Point: TVector3): Boolean;
@@ -1002,9 +974,9 @@ end;
 { calculates the surface normal vector at the specified point. }
 procedure TContactHole.SurfNormal(Point: TVector3; var Normal: TVector3);
 begin
-  Normal.X := mEmpty;
-  Normal.Y := mEmpty;
-  Normal.Z := mEmpty;
+  Normal.X := NaN;
+  Normal.Y := NaN;
+  Normal.Z := NaN;
   if Equal(Point.Z, 0.0, FloatEps) and (not InHole(Point)) then
   begin
     Normal.X := 0.0;
@@ -1031,7 +1003,7 @@ end;
 (* ------------------------------------------------------------------------ *)
 (* Implements the description of a stripe (conductor line) having height    *)
 (* <Height> and width <Width>.                                              *)
-(* The stripe runs along the y axis.                                        *)
+(* The stripe runs along the y axis, its center is at x=0.                  *)
 (* The z axis points along the sample normal away from the sample.          *)
 (* The origin is at the top plane of the sample, i.e. substrate points      *)
 (* have negative z coordinates.                                             *)
@@ -1051,86 +1023,53 @@ begin
   FHeight := -abs(AHeight);    // negative z coordinates at the bottom
 end;
 
-(*
-procedure TStripe.DrawSample(Projection: TProjection);
-var
-  vp    : ViewportType;
-  x1,x2 : Integer;
-  y1,y2 : Integer;
-BEGIN
-  IF GetGraphMode>=0 THEN BEGIN
-    GetViewSettings(vp);
-    SetLineStyle(SolidLn, 0, ThickWidth);
-    SetColor(white);
-    x1 := xPix(-Width*0.5);
-    x2 := xPix(Width*0.5);
-    y1 := yPix(0.0);
-    y2 := yPix(Height);
-    CASE Projection OF
-      XYproj :
-        BEGIN
-          Line(x1, 0, x1, vp.y2-vp.y1);
-          Line(x2, 0, x2, vp.y2-vp.y1);
-        END;
-      XZproj :
-        BEGIN
-          Line(0, y2, vp.x2-vp.x1, y2);
-          Line(x1,y2, x1, y1);
-          Line(x1,y1, x2, y1);
-          Line(x2,y1, x2, y2);
-        END;
-      YZproj :
-        BEGIN
-          Line(0,y1, vp.x2-vp.x1, y1);
-          Line(0,y2, vp.x2-vp.x1, y2);
-        END;
-    END;
-  END;
-END;
-*)
-
 function TStripe.Intersection(Ray: TRay; var Point: TVector3;
   FromOutside: Boolean): Boolean;
 var
   Plane : TRay;
-  W     : float;
-  dt,db : float;
-  DL,dr : float;
+  W2    : float;
+  dt, db: float;
+  DL, dr: float;
 begin
-  W  := Width*0.5;
+  Plane := Default(TRay);
+  W2 := Width*0.5;     // half width
 
-  VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { Intersection at the top }
+  // Intersection at the top
+  VecAssign(Plane.Point, 0.0, 0.0, 0.0);
   Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
-  if (dt <> mEmpty) and (not Zero(Point.X, W)) then
-    dt := mEmpty;
+  if IsNaN(dt) or not Between(Point.X, -W2, W2, FloatEps) then
+    dt := Infinity;  // use Infinity so that Min() can be called below
 
-  Plane.Point.Z := Height;                  { Intersection at the bottom }
+  // Intersection at the bottom
+  Plane.Point.Z := Height;
   db := rayXplane(ray, Plane, Point);
-  if (db <> mEmpty) and Zero(Point.X, W) then
-    db := mEmpty;
+  if IsNaN(db) or Between(Point.X, -W2, W2, FloatEps) then
+    db := Infinity;
 
-  VecAssign(Plane.Point, W, 0.0, 0.0);      { right sidewall }
+  // Right sidewall
+  VecAssign(Plane.Point, W2, 0.0, 0.0);
   VecAssign(Plane.Dir, 1.0, 0.0, 0.0);
   dr := rayXplane(ray, Plane, Point);
-  if (dr <> mEmpty) and (not Between(Point.Z, Height, 0.0, floateps)) then
-    dr := mEmpty;
+  if IsNaN(dr) or not Between(Point.Z, Height, 0.0, floateps) then    // Height is negative!
+    dr := Infinity;
 
-  Plane.Point.X := -W;                      { left sidewall }
+  // Left sidewall
+  Plane.Point.X := -W2;
   Plane.Dir.X   := -1.0;
   dl := rayXplane(ray, Plane, Point);
-  if (dl <> mEmpty) and (not Between(Point.Z, Height, 0.0, floateps)) then
-    dl := mEmpty;
+  if IsNaN(dl) or not Between(Point.Z, Height, 0.0, floateps) then   // Height is negative!
+    dl := Infinity;
 
-  dt := MinF(dt, MinF(db, MinF(dr,DL)));
-  if dt <> mEmpty then
+  dt := Min(dt, Min(db, Min(dr, DL)));
+  if dt < Infinity then
   begin
     VecMulSc(Ray.Dir, dt);
     VecAdd(Ray.Point, Ray.Dir, Point);
     Result := true;
   end else
   begin
-    VecAssign(Point, mEmpty, mEmpty, mEmpty);
+    VecAssign(Point, NaN, NaN, NaN);
     Result := false
   end;
 end;
@@ -1141,11 +1080,11 @@ var
 begin
   W := Width*0.5;
   Result :=
-    (Zero(Point.Z, FloatEps) and Zero(Point.X, W))             { Upper surface }
+    (Zero(Point.Z, FloatEps) and Zero(Point.X, W))                // Upper surface
     or
-    (Equal(Point.Z, Height, FloatEps) and (not Zero(Point.X, W))) { Substrate}
+    (Equal(Point.Z, Height, FloatEps) and (not Zero(Point.X, W))) // Substrate
     or
-    (Equal(Abs(Point.X), W, FloatEps) and Between(Point.Z, Height, 0.0, floateps)); {Side walls }
+    (Equal(Abs(Point.X), W, FloatEps) and Between(Point.Z, Height, 0.0, floateps)); // Side walls
 end;
 
 { Return true if the point <Point> is outside the sample. }
@@ -1166,7 +1105,7 @@ var
 begin
   W := Width * 0.5;
   if Equal(Abs(Point.X), W, FloatEps) then
-    VecAssign(Normal, sgn(Point.X), 0.0, 0.0)
+    VecAssign(Normal, sign(Point.X), 0.0, 0.0)
   else
     VecAssign(Normal, 0.0, 0.0, 1.0);
 end;
@@ -1201,82 +1140,50 @@ begin
   FHeight:= -abs(AHeight);     // negative z coordinates at the bottom!
 END;
 
-{
-procedure TStep.DrawSample(Projection:TProjection);
-VAR
-  vp : ViewportType;
-  x,y1,y2 : INTEGER;
-BEGIN
-  IF GetGraphMode>=0 THEN BEGIN
-    GetViewSettings(vp);
-    SetLineStyle(SolidLn, 0, ThickWidth);
-    SetColor(White);
-    y1 := yPix(0.0);
-    y2 := yPix(Height);
-    x  := xPix(0.0);
-    CASE Projection OF
-      XYproj : Line(x, 0, x, vp.y2-vp.y1);
-      XZproj :
-        BEGIN
-          Line(0, y2, vp.x2-vp.x1, y2);
-          IF Dir=sdUP THEN BEGIN
-            Line(x, y1, x, y2);
-            Line(x, y1, vp.x2-vp.x1, y1);
-          END ELSE BEGIN
-            Line(0, y1, x, y1);
-            Line(x, y2, x, y1);
-          END;
-        END;
-      YZproj :
-        BEGIN
-          Line(0, yPix(0.0), vp.x2-vp.x1, yPix(0.0));
-          Line(0, yPix(Height), vp.x2-vp.x1, yPix(Height));
-        END;
-    END;
-  END;
-END;
-}
-
 function TStep.Intersection(Ray: TRay; var Point: TVector3;
   FromOutside: Boolean): Boolean;
 var
-  Plane    : TRay;
-  dt,db,dw : Float;
+  Plane      : TRay;
+  dt, db, dw : Float;
 begin
   Plane := Default(TRay);  // to silence the compiler
 
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { Intersection at the top }
   Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
-  if (dt <> mEmpty) then
+  if IsNaN(dt) then
+    dt := Infinity
+  else
     case Dir of
-      sdUp   : if not GreaterThan(Point.X, 0.0, FloatEps) then dt := mEmpty;
-      sdDown : if not LessThan(Point.X, 0.0, FloatEps) then dt := mEmpty;
+      sdUp   : if not GreaterThan(Point.X, 0.0, FloatEps) then dt := Infinity;
+      sdDown : if not LessThan(Point.X, 0.0, FloatEps) then dt := Infinity;
     end;
 
   Plane.Point.Z := Height;                  { Intersection at bottom }
   db := rayXplane(ray, Plane, Point);
-  if (db <> mEmpty) then
+  if IsNaN(db) then
+    db := Infinity
+  else
     case Dir of
-      sdUp   : if not LessThan(Point.X, 0.0, FloatEps) then db := mEmpty;
-      sdDown : if not GreaterThan(Point.X, 0.0, FloatEps) then db := mEmpty;
+      sdUp   : if not LessThan(Point.X, 0.0, FloatEps) then db := Infinity;
+      sdDown : if not GreaterThan(Point.X, 0.0, FloatEps) then db := Infinity;
     end;
 
   VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { edge }
   SurfNormal(Plane.Point, Plane.Dir);
   dw := rayXplane(ray, Plane, Point);
-  if (dw <> mEmpty) and (not Between(Point.Z, Height,0.0, Floateps)) then
-    dw := mEmpty;
+  if IsNaN(dw) or not Between(Point.Z, Height,0.0, Floateps) then
+    dw := Infinity;
 
-  dt := MinF(dt, MinF(db, dw));
-  if dt <> mEmpty then
+  dt := Min(dt, Min(db, dw));
+  if dt < Infinity then
   begin
     VecMulSc(Ray.Dir, dt);
     VecAdd(Ray.Point, Ray.Dir, Point);
     Result := true;
   end else
   begin
-    VecAssign(Point, mEmpty, mEmpty, mEmpty);
+    VecAssign(Point, NaN, NaN, NaN);
     Result := false;
   end;
 end;
@@ -1307,11 +1214,11 @@ begin
   else
   if GreaterThan(Point.X, 0.0, FloatEps) then
   begin
-    y := FirstIfTrue(Dir=sdUp, 0.0, Height);
+    y := IfThen(Dir=sdUp, 0.0, Height);
     Result := GreaterThan(Point.Z, Y, FloatEps);
   end else
   begin
-    y := FirstIfTrue(Dir=sdUp, Height, 0.0);
+    y := IfThen(Dir=sdUp, Height, 0.0);
     Result := GreaterThan(Point.Z, Y, FloatEps);
   end;
 end;

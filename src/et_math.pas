@@ -27,6 +27,8 @@ function SqrSolve(a, b, c: float; var x1, x2: float): boolean;
 procedure SwapFloat(var x, y: Float);
 function Zero(x, Tol: Float): Boolean;
 
+function Vector3(x, y, z: Float): TVector3;
+
 procedure VecAssign(var A: TVector3; x, y, z: float);
 function ValidVector(V: TVector3): boolean;
 function DotProduct(const A, B: TVector3): float;
@@ -212,6 +214,13 @@ end;
 (****************************************************************************)
 (*                             Vector math                                  *)
 (****************************************************************************)
+
+function Vector3(x, y, z: Float): TVector3;
+begin
+  Result.x := x;
+  Result.Y := y;
+  Result.Z := z;
+end;
 
 procedure VecAssign(var A: TVector3; x, y, z: float);
 begin

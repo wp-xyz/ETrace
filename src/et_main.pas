@@ -11,7 +11,9 @@ uses
   Forms, Controls, Graphics, Dialogs, StdCtrls,
   Spin, ExtCtrls, ComCtrls, Buttons,
   // TAChart
-  TAGraph, TACustomSource, TACustomSeries, TASeries, TASources,
+  TAGraph, TAChartUtils, TAGeometry, TADrawUtils,
+  TACustomSource, TASources,
+  TACustomSeries, TASeries,
   // project units
   et_Global, et_Math, et_Objects, et_Sim;
 
@@ -91,6 +93,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure rgProjectionClick(Sender: TObject);
+    procedure TrajectoriesChartAfterDraw(ASender: TChart; ADrawer: IChartDrawer);
     procedure TrajectoryGetChartDataItemHandler(ASource: TUserDefinedChartSource;
       AIndex: Integer; var AItem: TChartDataItem);
   private
@@ -253,13 +256,13 @@ var
   isCMA: Boolean;
 begin
   isCMA := cmbAnalyzerType.ItemIndex = 0;
-  cbAnnularAperture.Enabled := isCMA and FRunning;
-  lblFrom.Enabled := isCMA and cbAnnularAperture.Checked and FRunning;
-  seSectorFrom.Enabled := lblFrom.Enabled and FRunning;
-  lblTo.Enabled := lblFrom.Enabled and FRunning;
-  seSectorTo.Enabled := lblFrom.Enabled and FRunning;
-  lblDeg.Enabled := lblFrom.Enabled and FRunning;
-  cbUseHoeslerAp.Enabled := isCMA and FRunning;
+  cbAnnularAperture.Enabled := isCMA and not FRunning;
+  lblFrom.Enabled := isCMA and cbAnnularAperture.Checked and not FRunning;
+  seSectorFrom.Enabled := lblFrom.Enabled and not FRunning;
+  lblTo.Enabled := lblFrom.Enabled and not FRunning;
+  seSectorTo.Enabled := lblFrom.Enabled and not FRunning;
+  lblDeg.Enabled := lblFrom.Enabled and not FRunning;
+  cbUseHoeslerAp.Enabled := isCMA and not FRunning;
 end;
 
 procedure TMainForm.cmbTopographyChange(Sender: TObject);
@@ -268,9 +271,9 @@ var
 begin
   topo := GetSelectedTopography;
 
-  lblWidth.Enabled := (topo <> ttStep) and FRunning;
-  seWidth.Enabled := (topo <> ttStep) and FRunning;
-  sbDirUp.Enabled := (topo = ttStep) and FRunning;
+  lblWidth.Enabled := (topo <> ttStep) and not FRunning;
+  seWidth.Enabled := (topo <> ttStep) and not FRunning;
+  sbDirUp.Enabled := (topo = ttStep) and not FRunning;
   sbDirDown.Enabled := sbDirUp.Enabled;
 
   case topo of
@@ -661,6 +664,7 @@ var
   s: String;
   section: String;
   savedFormatSettings: TFormatSettings;
+  d: Double;
 begin
   savedFormatSettings := FormatSettings;
   cfg := TIniFile.Create(CFG_FILE_NAME);
@@ -722,6 +726,131 @@ begin
   finally
     cfg.Free;
     FormatSettings := savedFormatSettings;
+  end;
+end;
+
+procedure TMainForm.TrajectoriesChartAfterDraw(ASender: TChart;
+  ADrawer: IChartDrawer);
+var
+  ext: TDoubleRect;
+  P: array of TPoint;
+  R: TRect;
+  viewIndex: Integer;
+  layerThk: Float;
+begin
+  ext := ASender.CurrentExtent;
+  ADrawer.SetPenParams(psSolid, clRed, 3);
+  ADrawer.SetBrushParams(bsClear, clNone);
+
+  if ASender = TrajectoriesChart then
+    viewIndex := rgProjection.ItemIndex
+  else
+    viewIndex := 0;
+
+  if seLayerThickness.Value < 0 then
+    layerThk := seDepth.Value
+  else
+    layerThk := seLayerThickness.value;
+
+  case cmbTopography.ItemIndex of
+    0:  // contact hole
+      case viewIndex of
+        0: // x-y plane
+          begin
+            R.TopLeft := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, seWidth.Value/2));
+            R.BottomRight := ASender.GraphToImage(DoublePoint(seWidth.Value/2, -seWidth.Value/2));
+            ADrawer.Ellipse(R.Left, R.Top, R.Right, R.Bottom);
+          end;
+        1, // x-z plane
+        2: // y-z plane
+          begin
+            SetLength(P, 4);
+            P[0] := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, 0.0));
+            P[1] := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, -seDepth.Value));
+            P[2] := ASender.GraphToImage(DoublePoint( seWidth.Value/2, -seDepth.Value));
+            P[3] := ASender.GraphToImage(DoublePoint( seWidth.Value/2, 0.0));
+            ADrawer.Polyline(P, 0, Length(P));
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, 0.0));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.x, 0.0));
+            ADrawer.Line(P[0], P[1]);
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, -layerThk));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.x, -layerThk));
+            ADrawer.Line(P[0], P[1]);
+          end;
+      end;
+    1:  // Stripe
+      case viewIndex of
+        0:  // x-y plane
+          begin
+            SetLength(P, 2);
+            P[0] := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, ext.a.Y));
+            P[1] := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, ext.b.Y));
+            ADrawer.Line(P[0], P[1]);
+            P[0] := ASender.GraphToImage(DoublePoint(+seWidth.Value/2, ext.a.Y));
+            P[1] := ASender.GraphToImage(DoublePoint(+seWidth.Value/2, ext.b.Y));
+            ADrawer.line(P[0], P[1]);
+          end;
+        1:  // x-z plane
+          begin
+            SetLength(P, 4);
+            P[0] := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, -seDepth.Value));
+            P[1] := ASender.GraphToImage(DoublePoint(-seWidth.Value/2, 0.0));
+            P[2] := ASender.GraphToImage(DoublePoint( seWidth.Value/2, 0.0));
+            P[3] := ASender.GraphToImage(DoublePoint( seWidth.Value/2, -seDepth.Value));
+            ADrawer.Polyline(P, 0, Length(P));
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, -seDepth.Value));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.x, -seDepth.Value));
+            ADrawer.Line(P[0], P[1]);
+          end;
+        2:  // y-z plane
+          begin
+            SetLength(P, 2);
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.X, 0.0));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.X, 0.0));
+            ADrawer.line(P[0], P[1]);
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.X, -seDepth.Value));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.X, -seDepth.Value));
+            ADrawer.line(P[0], P[1]);
+          end;
+      end;
+    2:  // Step
+      case viewIndex of
+        0:  // x-y plane
+          begin
+            SetLength(P, 2);
+            P[0] := ASender.GraphToImage(DoublePoint(0.0, ext.a.Y));
+            P[1] := ASender.GraphToImage(DoublePoint(0.0, ext.b.Y));
+            ADrawer.line(P[0], P[1]);
+          end;
+        1:  // x-z plane
+          begin
+            SetLength(P, 4);
+            if sbDirUp.Down then
+            begin
+              P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, -seDepth.Value));
+              P[1] := ASender.GraphToImage(DoublePoint(0.0, -seDepth.Value));
+              P[2] := ASender.GraphToImage(DoublePoint(0.0, 0.0));
+              P[3] := ASender.GraphToImage(DoublePoint(ext.b.x, 0.0));
+            end else
+            begin
+              P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, 0.0));
+              P[1] := ASender.GraphToImage(DoublePoint(0.0, 0.0));
+              P[2] := ASender.GraphToImage(DoublePoint(0.0, -seDepth.Value));
+              P[3] := ASender.GraphToImage(DoublePoint(ext.b.x, -seDepth.Value));
+            end;
+            ADrawer.Polyline(P, 0, 4);
+          end;
+        2:   // y-z plane
+          begin
+            SetLength(P, 2);
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, 0.0));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.x, 0.0));
+            ADrawer.Line(P[0], P[1]);
+            P[0] := ASender.GraphToImage(DoublePoint(ext.a.x, -seDepth.Value));
+            P[1] := ASender.GraphToImage(DoublePoint(ext.b.x, -seDepth.Value));
+            ADrawer.Line(P[0], P[1]);
+          end;
+      end;
   end;
 end;
 

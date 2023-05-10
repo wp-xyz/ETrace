@@ -109,6 +109,7 @@ begin
   if FErrorCode <> etOK then
     exit;
 
+  ExitsSample := false;
   finished := false;
   n := 0;
 
@@ -130,7 +131,9 @@ begin
         VecMulSc(Ray.Dir, -1.0);   // Determine the point of emission
         if FSample.Intersection(Ray, P, FROM_INSIDE) then
           Point := P;
+        ExitsSample := true;
         finished := true;
+        // Do not "break" here because an Auger electron may be emitted at the exit point.
       end;
 
       if GreaterThan(Point.Z, zIntf, FloatEps) then
@@ -155,12 +158,10 @@ begin
         finished := true;
     until finished or (FErrorCode <> etOK) or FSample.OnlyDirect;
   end;
+
   SetLength(trajectory, n);
   if Assigned(FOnTrajectoryComplete) then
     FOnTrajectoryComplete(Self, ElectronID, trajectory);
-
-  ExitsSample := (E >= Emin) and (not FSample.OnlyDirect);
-  { Only when electron has exited the sample E is greater than Emin }
 end;
 
 
@@ -263,8 +264,11 @@ begin
 
   minEnergy := Min(FLayer.CoreLevelEnergy, FSubstrate.CoreLevelEnergy);
   isPrimaryElectron := (ASecCount = 0);
+
   if FSample.Intersection(Electron.Ray, Point, isPrimaryElectron) then
   begin
+    if Point.X < -3 then
+      id := '';
     Electron.Ray.Point := Point;
     id := 'el_' + IntToStr(APrimCount);
     if ASecCount <> 0 then

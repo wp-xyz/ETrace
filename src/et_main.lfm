@@ -85,6 +85,7 @@ object MainForm: TMainForm
             Title.Text.Strings = (
               'TAChart'
             )
+            OnAfterDraw = TrajectoriesChartAfterDraw
             Align = alClient
             BorderSpacing.Around = 6
             Color = clWindow
@@ -186,7 +187,7 @@ object MainForm: TMainForm
           BorderSpacing.Bottom = 6
           MaxValue = 65535
           TabOrder = 1
-          Value = 100
+          Value = 250
         end
         object Label2: TLabel
           AnchorSideLeft.Control = rgProjection
@@ -228,6 +229,7 @@ object MainForm: TMainForm
         Title.Text.Strings = (
           'TAChart'
         )
+        OnAfterDraw = TrajectoriesChartAfterDraw
         Align = alClient
         Color = clWindow
       end
@@ -710,6 +712,7 @@ object MainForm: TMainForm
         BorderSpacing.Top = 4
         BorderSpacing.Right = 8
         DecimalPlaces = 1
+        Increment = 0.1
         MaxValue = 999999
         MinValue = -1
         TabOrder = 3
@@ -739,6 +742,7 @@ object MainForm: TMainForm
         BorderSpacing.Top = 4
         BorderSpacing.Right = 8
         DecimalPlaces = 1
+        Increment = 0.1
         MaxValue = 999999
         MinValue = -1
         TabOrder = 4
@@ -768,6 +772,7 @@ object MainForm: TMainForm
         BorderSpacing.Top = 4
         BorderSpacing.Right = 8
         DecimalPlaces = 1
+        Increment = 0.1
         MaxValue = 999999
         MinValue = -1
         TabOrder = 5

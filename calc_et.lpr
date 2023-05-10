@@ -16,6 +16,8 @@ uses
 {$R *.res}
 
 begin
+  RandSeed := 5;
+
   RequireDerivedFormResource:=True;
   Application.Scaled:=True;
   Application.Initialize;

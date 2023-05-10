@@ -965,8 +965,8 @@ end;
 { Returns true when the point <Point> is outside the sample. }
 function TContactHole.Outside(Point: TVector3): boolean;
 begin
-  if InHole(Point) then
-    Result := GreaterThan(Point.Z, Depth, FloatEps)
+  if InHole(Point) and GreaterThan(Point.Z, Depth, FloatEps) then
+    Result := true
   else
     Result := GreaterThan(Point.Z, 0.0, FloatEps);
 end;

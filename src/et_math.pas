@@ -225,7 +225,6 @@ end;
   there is no intersection of the line with the geometric object. }
 function ValidVector(V: TVector3): boolean;
 begin
-//  Result := (V.X <> mEmpty) and (V.Y <> mEmpty) and (V.Z <> mEmpty);
   Result := not IsNaN(V.X) and not IsNaN(V.Y) and not IsNaN(V.Z);
 end;
 

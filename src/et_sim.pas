@@ -151,7 +151,7 @@ begin
           FOnDetection(Self, nDetected, AugerEl);
       end;
 
-      if not FSample.OnlyDirect then
+      if not (FSample.OnlyDirect or ExitsSample) then
         FSample.Scatter(Electron, E);
 
       if (E < EMin) or FAborted then

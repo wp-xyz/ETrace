@@ -1,20 +1,20 @@
 object MainForm: TMainForm
   Left = 261
-  Height = 603
+  Height = 610
   Top = 130
-  Width = 912
+  Width = 992
   Caption = 'Electron Tracer'
-  ClientHeight = 603
-  ClientWidth = 912
+  ClientHeight = 610
+  ClientWidth = 992
   OnActivate = FormActivate
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   LCLVersion = '2.3.0.0'
   object ResultsPageControl: TPageControl
     Left = 261
-    Height = 579
+    Height = 586
     Top = 12
-    Width = 639
+    Width = 719
     ActivePage = pgTrajectories
     Align = alClient
     BorderSpacing.Around = 12
@@ -22,13 +22,13 @@ object MainForm: TMainForm
     TabOrder = 0
     object pgSummary: TTabSheet
       Caption = 'Summary'
-      ClientHeight = 551
-      ClientWidth = 631
+      ClientHeight = 558
+      ClientWidth = 711
       object SummaryMemo: TMemo
         Left = 6
-        Height = 539
+        Height = 546
         Top = 6
-        Width = 619
+        Width = 699
         Align = alClient
         BorderSpacing.Around = 6
         Font.Height = -12
@@ -42,74 +42,124 @@ object MainForm: TMainForm
     end
     object pgEmissionPoints: TTabSheet
       Caption = 'Emission points'
-      ClientHeight = 551
-      ClientWidth = 631
+      ClientHeight = 558
+      ClientWidth = 711
       object EmissionPointsPageControl: TPageControl
         Left = 0
-        Height = 551
+        Height = 558
         Top = 0
-        Width = 631
+        Width = 711
         ActivePage = pgPlot
         Align = alClient
         TabIndex = 0
         TabOrder = 0
         object pgPlot: TTabSheet
           Caption = 'Plot'
-          ClientHeight = 523
-          ClientWidth = 623
-          object EmissionPointsChart: TChart
+          ClientHeight = 530
+          ClientWidth = 703
+          object Panel1: TPanel
             Left = 6
-            Height = 511
+            Height = 518
             Top = 6
-            Width = 611
-            AxisList = <            
-              item
-                Grid.Color = clSilver
-                Marks.LabelBrush.Style = bsClear
-                Minors = <>
-                Title.LabelFont.Orientation = 900
-                Title.Visible = True
-                Title.Caption = 'Y'
-                Title.LabelBrush.Style = bsClear
-              end            
-              item
-                Grid.Color = clSilver
-                Alignment = calBottom
-                Marks.LabelBrush.Style = bsClear
-                Minors = <>
-                Title.Visible = True
-                Title.Caption = 'X'
-                Title.LabelBrush.Style = bsClear
-              end>
-            Proportional = True
-            Title.Text.Strings = (
-              'TAChart'
-            )
-            OnAfterDraw = TrajectoriesChartAfterDraw
+            Width = 691
             Align = alClient
             BorderSpacing.Around = 6
+            BevelOuter = bvNone
+            ClientHeight = 518
+            ClientWidth = 691
             Color = clWindow
-            object EmissionPointsSeries: TLineSeries
-              LineType = ltNone
-              Pointer.Brush.Color = clBlack
-              Pointer.HorizSize = 2
-              Pointer.Style = psCircle
-              Pointer.VertSize = 2
-              Pointer.Visible = True
-              ShowPoints = True
-              Source = EmissionPointsSource
+            ParentBackground = False
+            ParentColor = False
+            TabOrder = 0
+            object EmissionPointsChart: TChart
+              AnchorSideLeft.Control = Panel1
+              AnchorSideTop.Control = Panel1
+              AnchorSideRight.Control = Panel1
+              AnchorSideRight.Side = asrBottom
+              AnchorSideBottom.Control = seEmissionPointsHorMin
+              Left = 0
+              Height = 495
+              Top = 0
+              Width = 691
+              AxisList = <              
+                item
+                  Grid.Color = clSilver
+                  Marks.LabelBrush.Style = bsClear
+                  Minors = <>
+                  Title.LabelFont.Orientation = 900
+                  Title.Visible = True
+                  Title.Caption = 'Y'
+                  Title.LabelBrush.Style = bsClear
+                end              
+                item
+                  Grid.Color = clSilver
+                  Alignment = calBottom
+                  Marks.LabelBrush.Style = bsClear
+                  Minors = <>
+                  Title.Visible = True
+                  Title.Caption = 'X'
+                  Title.LabelBrush.Style = bsClear
+                end>
+              Proportional = True
+              Title.Text.Strings = (
+                'TAChart'
+              )
+              OnAfterDraw = TrajectoriesChartAfterDraw
+              Anchors = [akTop, akLeft, akRight, akBottom]
+              Color = clWindow
+              object EmissionPointsSeries: TLineSeries
+                LineType = ltNone
+                Pointer.Brush.Color = clBlack
+                Pointer.HorizSize = 2
+                Pointer.Style = psCircle
+                Pointer.VertSize = 2
+                Pointer.Visible = True
+                ShowPoints = True
+                Source = EmissionPointsSource
+              end
+            end
+            object seEmissionPointsHorMin: TFloatSpinEdit
+              AnchorSideLeft.Control = EmissionPointsChart
+              AnchorSideBottom.Control = Panel1
+              AnchorSideBottom.Side = asrBottom
+              Left = 0
+              Height = 23
+              Top = 495
+              Width = 64
+              Alignment = taRightJustify
+              Anchors = [akLeft, akBottom]
+              Constraints.MinWidth = 64
+              OnChange = EmissionPointsChartExtentChange
+              TabOrder = 1
+              Value = -5
+            end
+            object seEmissionPointsHorMax: TFloatSpinEdit
+              AnchorSideRight.Control = EmissionPointsChart
+              AnchorSideRight.Side = asrBottom
+              AnchorSideBottom.Control = Panel1
+              AnchorSideBottom.Side = asrBottom
+              Left = 627
+              Height = 23
+              Top = 495
+              Width = 64
+              Alignment = taRightJustify
+              Anchors = [akRight, akBottom]
+              Constraints.MinWidth = 64
+              OnChange = EmissionPointsChartExtentChange
+              TabOrder = 2
+              Value = 5
             end
           end
         end
         object pgValues: TTabSheet
           Caption = 'Values'
-          ClientHeight = 523
-          ClientWidth = 623
+          ClientHeight = 530
+          ClientWidth = 703
           object EmissionPointsMemo: TMemo
             Left = 6
-            Height = 511
+            Height = 518
             Top = 6
-            Width = 611
+            Width = 691
             Align = alClient
             BorderSpacing.Around = 6
             Font.Height = -12
@@ -125,17 +175,17 @@ object MainForm: TMainForm
     end
     object pgTrajectories: TTabSheet
       Caption = 'Trajectories'
-      ClientHeight = 551
-      ClientWidth = 631
+      ClientHeight = 558
+      ClientWidth = 711
       object TrajectoryOptionsPanel: TPanel
         Left = 0
-        Height = 551
+        Height = 558
         Top = 0
         Width = 97
         Align = alLeft
         AutoSize = True
         BevelOuter = bvNone
-        ClientHeight = 551
+        ClientHeight = 558
         ClientWidth = 97
         Color = clWindow
         ParentBackground = False
@@ -201,50 +251,102 @@ object MainForm: TMainForm
           Caption = 'Trajectory count'
         end
       end
-      object TrajectoriesChart: TChart
+      object TrajectoryChartPanel: TPanel
         Left = 97
-        Height = 551
+        Height = 558
         Top = 0
-        Width = 534
-        AxisList = <        
-          item
-            Grid.Color = clSilver
-            Marks.LabelBrush.Style = bsClear
-            Minors = <>
-            Title.LabelFont.Orientation = 900
-            Title.Visible = True
-            Title.Caption = 'Z'
-            Title.LabelBrush.Style = bsClear
-          end        
-          item
-            Grid.Color = clSilver
-            Alignment = calBottom
-            Marks.LabelBrush.Style = bsClear
-            Minors = <>
-            Title.Visible = True
-            Title.Caption = 'X'
-            Title.LabelBrush.Style = bsClear
-          end>
-        Proportional = True
-        Title.Text.Strings = (
-          'TAChart'
-        )
-        OnAfterDraw = TrajectoriesChartAfterDraw
+        Width = 614
         Align = alClient
+        BevelOuter = bvNone
+        ClientHeight = 558
+        ClientWidth = 614
         Color = clWindow
+        ParentBackground = False
+        ParentColor = False
+        TabOrder = 1
+        object TrajectoriesChart: TChart
+          AnchorSideLeft.Control = TrajectoryChartPanel
+          AnchorSideTop.Control = TrajectoryChartPanel
+          AnchorSideRight.Control = TrajectoryChartPanel
+          AnchorSideRight.Side = asrBottom
+          AnchorSideBottom.Control = seTrajectoryHorMin
+          Left = 0
+          Height = 535
+          Top = 0
+          Width = 614
+          AxisList = <          
+            item
+              Grid.Color = clSilver
+              Marks.LabelBrush.Style = bsClear
+              Minors = <>
+              Title.LabelFont.Orientation = 900
+              Title.Visible = True
+              Title.Caption = 'Z'
+              Title.LabelBrush.Style = bsClear
+            end          
+            item
+              Grid.Color = clSilver
+              Intervals.MaxLength = 100
+              Intervals.MinLength = 30
+              Alignment = calBottom
+              Marks.LabelBrush.Style = bsClear
+              Minors = <>
+              Title.Visible = True
+              Title.Caption = 'X'
+              Title.LabelBrush.Style = bsClear
+            end>
+          Proportional = True
+          Title.Text.Strings = (
+            'TAChart'
+          )
+          OnAfterDraw = TrajectoriesChartAfterDraw
+          Anchors = [akTop, akLeft, akRight, akBottom]
+          Color = clWindow
+        end
+        object seTrajectoryHorMin: TFloatSpinEdit
+          AnchorSideLeft.Control = TrajectoriesChart
+          AnchorSideBottom.Control = TrajectoryChartPanel
+          AnchorSideBottom.Side = asrBottom
+          Left = 0
+          Height = 23
+          Top = 535
+          Width = 64
+          Alignment = taRightJustify
+          Anchors = [akLeft, akBottom]
+          Constraints.MinWidth = 64
+          OnChange = TrajectoriesChartExtentChange
+          TabOrder = 1
+          Value = -5
+        end
+        object seTrajectoryHorMax: TFloatSpinEdit
+          AnchorSideRight.Control = TrajectoryChartPanel
+          AnchorSideRight.Side = asrBottom
+          AnchorSideBottom.Control = TrajectoryChartPanel
+          AnchorSideBottom.Side = asrBottom
+          Left = 550
+          Height = 23
+          Top = 535
+          Width = 64
+          Alignment = taRightJustify
+          Anchors = [akRight, akBottom]
+          Constraints.MinWidth = 64
+          OnChange = TrajectoriesChartExtentChange
+          TabOrder = 2
+          Value = 5
+        end
       end
     end
   end
   object ParamsPanel: TPanel
     Left = 12
-    Height = 579
+    Height = 586
     Top = 12
     Width = 237
     Align = alLeft
     AutoSize = True
     BorderSpacing.Around = 12
     BevelOuter = bvNone
-    ClientHeight = 579
+    ClientHeight = 586
     ClientWidth = 237
     TabOrder = 1
     object gbEGun: TGroupBox
@@ -577,7 +679,7 @@ object MainForm: TMainForm
       AnchorSideBottom.Side = asrBottom
       Left = 131
       Height = 25
-      Top = 554
+      Top = 561
       Width = 106
       Anchors = [akRight, akBottom]
       AutoSize = True
@@ -836,7 +938,7 @@ object MainForm: TMainForm
       AnchorSideRight.Control = btnRunSim
       Left = 0
       Height = 20
-      Top = 556
+      Top = 563
       Width = 123
       Anchors = [akTop, akLeft, akRight]
       BorderSpacing.Right = 8

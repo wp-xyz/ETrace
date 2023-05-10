@@ -13,7 +13,7 @@ uses
   // TAChart
   TAGraph, TAChartUtils, TAGeometry, TADrawUtils,
   TACustomSource, TASources,
-  TACustomSeries, TASeries,
+  TACustomSeries, TASeries, SpinEx,
   // project units
   et_Global, et_Math, et_Objects, et_Sim;
 
@@ -29,6 +29,12 @@ type
     cmbTopography: TComboBox;
     cmbSubstrate: TComboBox;
     cmbLayer: TComboBox;
+    Panel1: TPanel;
+    seEmissionPointsHorMax: TFloatSpinEdit;
+    seTrajectoryHorMin: TFloatSpinEdit;
+    seTrajectoryHorMax: TFloatSpinEdit;
+    seEmissionPointsHorMin: TFloatSpinEdit;
+    TrajectoryChartPanel: TPanel;
     ProgressBar: TProgressBar;
     seSectorFrom: TFloatSpinEdit;
     seSectorTo: TFloatSpinEdit;
@@ -93,6 +99,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure rgProjectionClick(Sender: TObject);
+    procedure EmissionPointsChartExtentChange(Sender: TObject);
+    procedure TrajectoriesChartExtentChange(Sender: TObject);
     procedure TrajectoriesChartAfterDraw(ASender: TChart; ADrawer: IChartDrawer);
     procedure TrajectoryGetChartDataItemHandler(ASource: TUserDefinedChartSource;
       AIndex: Integer; var AItem: TChartDataItem);
@@ -412,6 +420,9 @@ begin
   BoldGroup(gbSample);
   BoldGroup(rgProjection);
 
+  EmissionPointsChartExtentChange(nil);
+  TrajectoriesChartExtentChange(nil);
+
   LoadParamsFromCfg;
   ParamsToGui(SimParams);
 end;
@@ -454,6 +465,35 @@ begin
     end;
   TrajectoriesChart.LeftAxis.Title.Caption := TITLE_Y[GetProjection];
   TrajectoriesChart.BottomAxis.Title.Caption := TITLE_X[GetProjection];
+end;
+
+procedure TMainForm.EmissionPointsChartExtentChange(Sender: TObject);
+var
+  xmin, xmax: Double;
+begin
+  xmin := seEmissionPointsHorMin.Value;
+  xmax := seEmissionPointsHorMax.Value;
+  if xmin <= xmax then
+  begin
+    EmissionPointsChart.Extent.XMin := xmin;
+    EmissionPointsChart.Extent.XMax := xmax;
+    EmissionPointsChart.Extent.UseXMin := true;
+    EmissionPointsChart.Extent.UseXMax := true;
+  end;
+end;
+procedure TMainForm.TrajectoriesChartExtentChange(Sender: TObject);
+var
+  xmin, xmax: Double;
+begin
+  xmin := seTrajectoryHorMin.Value;
+  xmax := seTrajectoryHorMax.Value;
+  if xmin <= xmax then
+  begin
+    TrajectoriesChart.Extent.XMin := xmin;
+    TrajectoriesChart.Extent.XMax := xmax;
+    TrajectoriesChart.Extent.UseXMin := true;
+    TrajectoriesChart.Extent.UseXMax := true;
+  end;
 end;
 
 procedure TMainForm.GUIToParams(var AParams: TSimParams);
@@ -738,6 +778,9 @@ var
   viewIndex: Integer;
   layerThk: Float;
 begin
+  if Length(FTrajectories) = 0 then
+    exit;
+
   ext := ASender.CurrentExtent;
   ADrawer.SetPenParams(psSolid, clRed, 3);
   ADrawer.SetBrushParams(bsClear, clNone);

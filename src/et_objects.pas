@@ -872,38 +872,6 @@ begin
   FDepth  := -Abs(ADepth);    // negative z coordinate at the bottom
 end;
 
-(*
-procedure TContactHole.DrawSample(Projection: TProjection);
-var
-  vp : ViewPortType;
-  x,y,rx,ry : INTEGER;
-BEGIN
-  IF GetGraphMode>=0 THEN BEGIN
-    GetViewSettings(vp);
-    GRAPH.SetColor(White);
-    GRAPH.SetLineStyle(SolidLn, 0, ThickWidth);
-    x := xPix(0.0);
-    y := yPix(0.0);
-    rx := xPix(Radius)-x;
-    ry := y-yPix(radius);
-    CASE Projection OF
-      XYproj :
-        BEGIN
-          GRAPH.Ellipse(x,y, 0, 360, rx, ry);
-        END;
-      XZproj,
-      YZproj :
-        BEGIN
-          Line(0, y, vp.x2-vp.x1, y);
-          Line(x-rx, y, x-rx, yPix(Depth));
-          Line(x-rx, yPix(Depth), x+rx, yPix(Depth));
-          Line(x+rx, yPix(Depth), x+rx, y);
-        END;
-    END;
-  END;
-END;
-*)
-
 function TContactHole.InHole(Point: TVector3): Boolean;
 begin
   with Point do

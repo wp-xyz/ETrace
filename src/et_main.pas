@@ -350,6 +350,19 @@ begin
   sample := ASimulation.Sample;
   intens := analyzer.Intensity;
 
+  TrajectoriesChart.Title.Text.Clear;
+  TrajectoriesChart.Title.Text.Add(Format('Primary energy: %.3g keV', [src.Energy]));
+  TrajectoriesChart.Title.Text.Add(Format('Beam diameter: %.3g µm', [src.BeamRadius*2]));
+  TrajectoriesChart.Title.Text.Add(Format('Incident angle: %.3g°', [src.PolarAngle]));
+  TrajectoriesChart.Title.Text.Add(Format('Sample: %s / %.3g µm %s on %s', [
+    cmbTopography.Items[cmbTopography.ItemIndex],
+    abs(sample.zInterface),
+    GetElementName(sample.Layer.Z, true),
+    GetElementName(sample.Substrate.Z, true)
+  ]));
+
+  EmissionPointsChart.Title.Text.Text := TrajectoriesChart.Title.Text.Text;
+
   if SummaryMemo.Lines.Count > 0 then
     SummaryMemo.Lines.Add('------------------------------------------------------------------');
 
@@ -373,6 +386,7 @@ begin
     SummaryMemo.Lines.Add('    Topography: Stripe (width=%.3f µm, height=%.3f µm)', [TStripe(sample).Width, TStripe(sample).Height]);
   if sample is TStep then
     SummaryMemo.Lines.Add('    Topography: Step (height=%.3f µm, %s)', [TStep(sample).Height, STEP_DIR[TStep(sample).Dir]]);
+  SummaryMemo.Lines.Add  ('    Title angle: %.0°', [src.PolarAngle]);
 
   SummaryMemo.Lines.Add('');
 

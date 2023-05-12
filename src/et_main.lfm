@@ -15,10 +15,10 @@ object MainForm: TMainForm
     Height = 612
     Top = 12
     Width = 719
-    ActivePage = pgTrajectories
+    ActivePage = pgEmissionPoints
     Align = alClient
     BorderSpacing.Around = 12
-    TabIndex = 2
+    TabIndex = 1
     TabOrder = 0
     object pgSummary: TTabSheet
       Caption = 'Summary'
@@ -101,9 +101,8 @@ object MainForm: TMainForm
                   Title.LabelBrush.Style = bsClear
                 end>
               Proportional = True
-              Title.Text.Strings = (
-                'TAChart'
-              )
+              Title.TextFormat = tfHTML
+              Title.Visible = True
               OnAfterDraw = TrajectoriesChartAfterDraw
               Anchors = [akTop, akLeft, akRight, akBottom]
               Color = clWindow
@@ -297,8 +296,10 @@ object MainForm: TMainForm
             end>
           Proportional = True
           Title.Text.Strings = (
-            'TAChart'
+            ''
           )
+          Title.TextFormat = tfHTML
+          Title.Visible = True
           OnAfterDraw = TrajectoriesChartAfterDraw
           Anchors = [akTop, akLeft, akRight, akBottom]
           Color = clWindow

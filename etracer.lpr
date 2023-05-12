@@ -1,4 +1,4 @@
-program calc_et;
+program ETracer;
 
 {$mode objfpc}{$H+}
 

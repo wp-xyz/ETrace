@@ -1,10 +1,10 @@
 object MainForm: TMainForm
   Left = 261
-  Height = 610
+  Height = 636
   Top = 130
   Width = 992
   Caption = 'Electron Tracer'
-  ClientHeight = 610
+  ClientHeight = 636
   ClientWidth = 992
   OnActivate = FormActivate
   OnCreate = FormCreate
@@ -12,7 +12,7 @@ object MainForm: TMainForm
   LCLVersion = '2.3.0.0'
   object ResultsPageControl: TPageControl
     Left = 261
-    Height = 586
+    Height = 612
     Top = 12
     Width = 719
     ActivePage = pgTrajectories
@@ -22,11 +22,11 @@ object MainForm: TMainForm
     TabOrder = 0
     object pgSummary: TTabSheet
       Caption = 'Summary'
-      ClientHeight = 558
+      ClientHeight = 584
       ClientWidth = 711
       object SummaryMemo: TMemo
         Left = 6
-        Height = 546
+        Height = 572
         Top = 6
         Width = 699
         Align = alClient
@@ -42,11 +42,11 @@ object MainForm: TMainForm
     end
     object pgEmissionPoints: TTabSheet
       Caption = 'Emission points'
-      ClientHeight = 558
+      ClientHeight = 584
       ClientWidth = 711
       object EmissionPointsPageControl: TPageControl
         Left = 0
-        Height = 558
+        Height = 584
         Top = 0
         Width = 711
         ActivePage = pgPlot
@@ -55,17 +55,17 @@ object MainForm: TMainForm
         TabOrder = 0
         object pgPlot: TTabSheet
           Caption = 'Plot'
-          ClientHeight = 530
+          ClientHeight = 556
           ClientWidth = 703
           object Panel1: TPanel
             Left = 6
-            Height = 518
+            Height = 544
             Top = 6
             Width = 691
             Align = alClient
             BorderSpacing.Around = 6
             BevelOuter = bvNone
-            ClientHeight = 518
+            ClientHeight = 544
             ClientWidth = 691
             Color = clWindow
             ParentBackground = False
@@ -78,7 +78,7 @@ object MainForm: TMainForm
               AnchorSideRight.Side = asrBottom
               AnchorSideBottom.Control = seEmissionPointsHorMin
               Left = 0
-              Height = 495
+              Height = 521
               Top = 0
               Width = 691
               AxisList = <              
@@ -124,7 +124,7 @@ object MainForm: TMainForm
               AnchorSideBottom.Side = asrBottom
               Left = 0
               Height = 23
-              Top = 495
+              Top = 521
               Width = 64
               Alignment = taRightJustify
               Anchors = [akLeft, akBottom]
@@ -140,7 +140,7 @@ object MainForm: TMainForm
               AnchorSideBottom.Side = asrBottom
               Left = 627
               Height = 23
-              Top = 495
+              Top = 521
               Width = 64
               Alignment = taRightJustify
               Anchors = [akRight, akBottom]
@@ -153,11 +153,11 @@ object MainForm: TMainForm
         end
         object pgValues: TTabSheet
           Caption = 'Values'
-          ClientHeight = 530
+          ClientHeight = 556
           ClientWidth = 703
           object EmissionPointsMemo: TMemo
             Left = 6
-            Height = 518
+            Height = 544
             Top = 6
             Width = 691
             Align = alClient
@@ -175,17 +175,17 @@ object MainForm: TMainForm
     end
     object pgTrajectories: TTabSheet
       Caption = 'Trajectories'
-      ClientHeight = 558
+      ClientHeight = 584
       ClientWidth = 711
       object TrajectoryOptionsPanel: TPanel
         Left = 0
-        Height = 558
+        Height = 584
         Top = 0
         Width = 97
         Align = alLeft
         AutoSize = True
         BevelOuter = bvNone
-        ClientHeight = 558
+        ClientHeight = 584
         ClientWidth = 97
         Color = clWindow
         ParentBackground = False
@@ -253,12 +253,12 @@ object MainForm: TMainForm
       end
       object TrajectoryChartPanel: TPanel
         Left = 97
-        Height = 558
+        Height = 584
         Top = 0
         Width = 614
         Align = alClient
         BevelOuter = bvNone
-        ClientHeight = 558
+        ClientHeight = 584
         ClientWidth = 614
         Color = clWindow
         ParentBackground = False
@@ -271,7 +271,7 @@ object MainForm: TMainForm
           AnchorSideRight.Side = asrBottom
           AnchorSideBottom.Control = seTrajectoryHorMin
           Left = 0
-          Height = 535
+          Height = 561
           Top = 0
           Width = 614
           AxisList = <          
@@ -309,7 +309,7 @@ object MainForm: TMainForm
           AnchorSideBottom.Side = asrBottom
           Left = 0
           Height = 23
-          Top = 535
+          Top = 561
           Width = 64
           Alignment = taRightJustify
           Anchors = [akLeft, akBottom]
@@ -325,7 +325,7 @@ object MainForm: TMainForm
           AnchorSideBottom.Side = asrBottom
           Left = 550
           Height = 23
-          Top = 535
+          Top = 561
           Width = 64
           Alignment = taRightJustify
           Anchors = [akRight, akBottom]
@@ -339,25 +339,25 @@ object MainForm: TMainForm
   end
   object ParamsPanel: TPanel
     Left = 12
-    Height = 586
+    Height = 612
     Top = 12
     Width = 237
     Align = alLeft
     AutoSize = True
     BorderSpacing.Around = 12
     BevelOuter = bvNone
-    ClientHeight = 586
+    ClientHeight = 612
     ClientWidth = 237
     TabOrder = 1
     object gbEGun: TGroupBox
       Left = 0
-      Height = 186
+      Height = 178
       Top = 0
       Width = 237
       Align = alTop
       AutoSize = True
       Caption = 'Electron gun'
-      ClientHeight = 166
+      ClientHeight = 158
       ClientWidth = 233
       TabOrder = 0
       object lblPrimElCount: TLabel
@@ -518,7 +518,6 @@ object MainForm: TMainForm
         Alignment = taRightJustify
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 4
-        BorderSpacing.Bottom = 8
         DecimalPlaces = 1
         Increment = 0.1
         MinValue = 0.1
@@ -538,7 +537,7 @@ object MainForm: TMainForm
     object gbAnalyzer: TGroupBox
       Left = 0
       Height = 122
-      Top = 198
+      Top = 190
       Width = 237
       Align = alTop
       AutoSize = True
@@ -679,7 +678,7 @@ object MainForm: TMainForm
       AnchorSideBottom.Side = asrBottom
       Left = 131
       Height = 25
-      Top = 561
+      Top = 587
       Width = 106
       Anchors = [akRight, akBottom]
       AutoSize = True
@@ -690,14 +689,14 @@ object MainForm: TMainForm
     end
     object gbSample: TGroupBox
       Left = 0
-      Height = 212
-      Top = 332
+      Height = 239
+      Top = 324
       Width = 237
       Align = alTop
       AutoSize = True
       BorderSpacing.Top = 12
       Caption = 'Sample'
-      ClientHeight = 192
+      ClientHeight = 219
       ClientWidth = 233
       TabOrder = 3
       object lblTopography: TLabel
@@ -706,7 +705,7 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 85
+        Top = 112
         Width = 63
         Caption = 'Topography'
       end
@@ -718,7 +717,7 @@ object MainForm: TMainForm
         AnchorSideRight.Side = asrBottom
         Left = 133
         Height = 23
-        Top = 81
+        Top = 108
         Width = 92
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 4
@@ -741,21 +740,23 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 4
+        Top = 31
         Width = 95
         BorderSpacing.Left = 16
         Caption = 'Substrate material'
       end
       object cmbSubstrate: TComboBox
         AnchorSideLeft.Control = seLayerThickness
-        AnchorSideTop.Control = gbSample
+        AnchorSideTop.Control = seTiltAngle
+        AnchorSideTop.Side = asrBottom
         AnchorSideRight.Control = gbSample
         AnchorSideRight.Side = asrBottom
         Left = 133
         Height = 23
-        Top = 0
+        Top = 27
         Width = 92
         Anchors = [akTop, akLeft, akRight]
+        BorderSpacing.Top = 4
         BorderSpacing.Right = 8
         ItemHeight = 15
         Style = csDropDownList
@@ -767,7 +768,7 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 31
+        Top = 58
         Width = 74
         Caption = 'Layer material'
       end
@@ -779,7 +780,7 @@ object MainForm: TMainForm
         AnchorSideRight.Side = asrBottom
         Left = 133
         Height = 23
-        Top = 27
+        Top = 54
         Width = 92
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 4
@@ -793,7 +794,7 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 58
+        Top = 85
         Width = 109
         Caption = 'Layer thickness (µm)'
       end
@@ -806,7 +807,7 @@ object MainForm: TMainForm
         AnchorSideRight.Side = asrBottom
         Left = 133
         Height = 23
-        Top = 54
+        Top = 81
         Width = 92
         Alignment = taRightJustify
         Anchors = [akTop, akLeft, akRight]
@@ -825,7 +826,7 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 112
+        Top = 139
         Width = 61
         Caption = 'Depth (µm)'
       end
@@ -837,7 +838,7 @@ object MainForm: TMainForm
         AnchorSideRight.Side = asrBottom
         Left = 133
         Height = 23
-        Top = 108
+        Top = 135
         Width = 92
         Alignment = taRightJustify
         Anchors = [akTop, akLeft, akRight]
@@ -855,7 +856,7 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 139
+        Top = 166
         Width = 61
         Caption = 'Width (µm)'
       end
@@ -867,7 +868,7 @@ object MainForm: TMainForm
         AnchorSideRight.Side = asrBottom
         Left = 133
         Height = 23
-        Top = 135
+        Top = 162
         Width = 92
         Alignment = taRightJustify
         Anchors = [akTop, akLeft, akRight]
@@ -886,7 +887,7 @@ object MainForm: TMainForm
         AnchorSideRight.Control = Bevel1
         Left = 133
         Height = 22
-        Top = 162
+        Top = 189
         Width = 41
         AllowAllUp = True
         Anchors = [akTop, akLeft, akRight]
@@ -904,7 +905,7 @@ object MainForm: TMainForm
         AnchorSideRight.Side = asrBottom
         Left = 184
         Height = 22
-        Top = 162
+        Top = 189
         Width = 41
         AllowAllUp = True
         Anchors = [akTop, akLeft, akRight]
@@ -916,7 +917,7 @@ object MainForm: TMainForm
         AnchorSideLeft.Side = asrCenter
         Left = 174
         Height = 21
-        Top = 163
+        Top = 159
         Width = 10
         Shape = bsSpacer
       end
@@ -926,9 +927,35 @@ object MainForm: TMainForm
         AnchorSideTop.Side = asrCenter
         Left = 16
         Height = 15
-        Top = 166
+        Top = 193
         Width = 48
         Caption = 'Direction'
+      end
+      object lblTiltAngle: TLabel
+        AnchorSideLeft.Control = lblSubstrate
+        AnchorSideTop.Control = seTiltAngle
+        AnchorSideTop.Side = asrCenter
+        Left = 16
+        Height = 15
+        Top = 4
+        Width = 79
+        Caption = 'Tilt angle (deg)'
+      end
+      object seTiltAngle: TFloatSpinEdit
+        AnchorSideLeft.Control = cmbSubstrate
+        AnchorSideTop.Control = gbSample
+        AnchorSideRight.Control = cmbSubstrate
+        AnchorSideRight.Side = asrBottom
+        Left = 133
+        Height = 23
+        Top = 0
+        Width = 92
+        Alignment = taRightJustify
+        Anchors = [akTop, akLeft, akRight]
+        DecimalPlaces = 1
+        MaxValue = 90
+        MinValue = -90
+        TabOrder = 6
       end
     end
     object ProgressBar: TProgressBar
@@ -938,7 +965,7 @@ object MainForm: TMainForm
       AnchorSideRight.Control = btnRunSim
       Left = 0
       Height = 20
-      Top = 563
+      Top = 589
       Width = 123
       Anchors = [akTop, akLeft, akRight]
       BorderSpacing.Right = 8

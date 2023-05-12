@@ -43,8 +43,8 @@ var
 
 const
   ANALYZERTYPE_NAME: array[TAnalyzerType] of String = ('(none)', 'CMA', 'CHA');
-  CFG_FILE_NAME = 'calc_et.cfg';
-  SingleEps     = 1E-4;      { data are stored in single precision }
+  CFG_FILE_NAME = 'etracer.cfg';
+  SingleEps     = 1E-4;           { data are stored in single precision }
 
 type
   TSimParams = record

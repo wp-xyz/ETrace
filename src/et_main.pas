@@ -29,8 +29,10 @@ type
     cmbTopography: TComboBox;
     cmbSubstrate: TComboBox;
     cmbLayer: TComboBox;
+    lblTiltAngle: TLabel;
     Panel1: TPanel;
     seEmissionPointsHorMax: TFloatSpinEdit;
+    seTiltAngle: TFloatSpinEdit;
     seTrajectoryHorMin: TFloatSpinEdit;
     seTrajectoryHorMax: TFloatSpinEdit;
     seEmissionPointsHorMin: TFloatSpinEdit;
@@ -515,6 +517,7 @@ begin
   AParams.Depth := seDepth.Value;
   AParams.Width := seWidth.Value;
   if sbDirUp.Down then AParams.StepDir := sdUp else AParams.StepDir := sdDown;
+  AParams.TiltAngle := seTiltAngle.Value;
 end;
 
 function TMainForm.InitMaterial(AMaterials: TMaterialsList; AName: String): TMaterial;
@@ -541,7 +544,6 @@ begin
     FormatSettings.DecimalSeparator := '.';
 
     section := 'Params';
-    SimParams.TiltAngle := cfg.ReadFloat(section, 'Tilt angle', SimParams.TiltAngle);
     SimParams.PrimaryEnergy := cfg.ReadFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
     SimParams.BeamDiameter := cfg.ReadFloat(section, 'Beam diameter', SimParams.BeamDiameter);
     SimParams.NumElectrons := cfg.ReadInteger(section, 'NumElectrons', SimParams.NumElectrons);
@@ -585,8 +587,9 @@ begin
     end;
     SimParams.SubstrateName := cfg.ReadString(section, 'Substrate material', SimParams.SubstrateName);
     SimParams.LayerName := cfg.ReadString(section, 'Layer material', SimParams.LayerName);
-    SimParams.LayerThickness := cfg.ReadFloat(section, 'LayerThickness', SimParams.LayerThickness);
-    SimParams.OnlyDirect := cfg.ReadBool(section, 'Only Direct', SimParams.OnlyDirect);
+    SimParams.LayerThickness := cfg.ReadFloat(section, 'Layer thickness', SimParams.LayerThickness);
+    SimParams.OnlyDirect := cfg.ReadBool(section, 'Only direct', SimParams.OnlyDirect);
+    SimParams.TiltAngle := cfg.ReadFloat(section, 'Tilt angle', SimParams.TiltAngle);
 
   finally
     cfg.Free;
@@ -613,6 +616,7 @@ begin
   seDepth.Value := AParams.Depth;
   seWidth.Value := AParams.Width;
   if AParams.StepDir = sdUp then sbDirUp.Down := true else sbDirDown.Down := true;
+  seTiltAngle.Value := AParams.TiltAngle;
 
   cmbAnalyzerTypeChange(nil);
   cmbTopographyChange(nil);
@@ -714,7 +718,6 @@ begin
     section := 'Params';
     cfg.EraseSection(section);
     cfg.WriteInteger(section, 'NumElectrons', SimParams.NumElectrons);
-    cfg.WriteFloat(section, 'Tilt angle', SimParams.TiltAngle);
     cfg.WriteFloat(section, 'Primary energy', SimParams.PrimaryEnergy);
     cfg.WriteFloat(section, 'Beam diameter', SimParams.BeamDiameter);
     case SimParams.AnalyzerType of
@@ -760,8 +763,9 @@ begin
     end;
     cfg.WriteString(section, 'Substrate material', SimParams.SubstrateName);
     cfg.WriteString(section, 'Layer material', SimParams.LayerName);
-    cfg.WriteFloat(section, 'LayerThickness', SimParams.LayerThickness);
-    cfg.WriteBool(section, 'Only Direct', SimParams.OnlyDirect);
+    cfg.WriteFloat(section, 'Layer thickness', SimParams.LayerThickness);
+    cfg.WriteBool(section, 'Only direct', SimParams.OnlyDirect);
+    cfg.WriteFloat(section, 'Tilt angle', SimParams.TiltAngle);
 
   finally
     cfg.Free;
@@ -773,6 +777,8 @@ procedure TMainForm.TrajectoriesChartAfterDraw(ASender: TChart;
   ADrawer: IChartDrawer);
 var
   ext: TDoubleRect;
+  ray, plane: TRay;
+  v: TVector3;
   P: array of TPoint;
   R: TRect;
   viewIndex: Integer;
@@ -784,6 +790,7 @@ begin
   ext := ASender.CurrentExtent;
   ADrawer.SetPenParams(psSolid, clRed, 3);
   ADrawer.SetBrushParams(bsClear, clNone);
+  ADrawer.ClippingStart;
 
   if ASender = TrajectoriesChart then
     viewIndex := rgProjection.ItemIndex
@@ -831,7 +838,7 @@ begin
             ADrawer.Line(P[0], P[1]);
             P[0] := ASender.GraphToImage(DoublePoint(+seWidth.Value/2, ext.a.Y));
             P[1] := ASender.GraphToImage(DoublePoint(+seWidth.Value/2, ext.b.Y));
-            ADrawer.line(P[0], P[1]);
+            ADrawer.Line(P[0], P[1]);
           end;
         1:  // x-z plane
           begin
@@ -850,10 +857,10 @@ begin
             SetLength(P, 2);
             P[0] := ASender.GraphToImage(DoublePoint(ext.a.X, 0.0));
             P[1] := ASender.GraphToImage(DoublePoint(ext.b.X, 0.0));
-            ADrawer.line(P[0], P[1]);
+            ADrawer.Line(P[0], P[1]);
             P[0] := ASender.GraphToImage(DoublePoint(ext.a.X, -seDepth.Value));
             P[1] := ASender.GraphToImage(DoublePoint(ext.b.X, -seDepth.Value));
-            ADrawer.line(P[0], P[1]);
+            ADrawer.Line(P[0], P[1]);
           end;
       end;
     2:  // Step
@@ -895,6 +902,32 @@ begin
           end;
       end;
   end;
+
+  // Draw electron beam
+  ADrawer.SetPenParams(psDash, clBlue, 3);
+
+  ray.Point := Vector3(seFocusX.Value, seFocusY.Value, seFocusZ.Value);
+  ray.Dir := Vector3(sin(DegToRad(seTiltAngle.Value)), 0, cos(DegToRad(seTiltAngle.Value)));
+  plane.Point := Vector3(0, 0, ext.b.y);
+  plane.Dir := Vector3(0, 0, 1);
+  rayXplane(ray, plane, v);
+  case ViewIndex of
+    0: ;
+    1:  // x-z plane
+      begin
+        P[0] := ASender.GraphToImage(DoublePoint(ray.Point.X, ray.Point.Z));
+        P[1] := ASender.GraphToImage(DoublePoint(v.X, v.Z));
+        ADrawer.Line(P[0], P[1]);
+      end;
+    2:  // y-z plane
+      begin
+        P[0] := ASender.GraphToImage(DoublePoint(ray.Point.Y, ray.Point.Z));
+        P[1] := ASender.GraphToImage(DoublePoint(v.Y, v.Z));
+        ADrawer.Line(P[0], P[1]);
+      end;
+  end;
+
+  ADrawer.ClippingStop;
 end;
 
 procedure TMainForm.TrajectoryCompleteHandler(Simulation: TSimulation;

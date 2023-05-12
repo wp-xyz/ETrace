@@ -42,6 +42,7 @@ type
     property FocusedPoint: TVector3 read FFocusedPoint;
     property NumFired: Integer read FNumFired;
     property PolarAngle: Float read GetPolarAngle;
+    // Azimuthal angle is 0, i.e. electron beam is in xz plane.
   end;
 
   TAnalyzer = class

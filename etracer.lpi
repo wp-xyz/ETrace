@@ -5,7 +5,7 @@
     <PathDelim Value="\"/>
     <General>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="calc_et"/>
+      <Title Value="etracer"/>
       <Scaled Value="True"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
@@ -39,8 +39,9 @@
     </RequiredPackages>
     <Units>
       <Unit>
-        <Filename Value="calc_et.lpr"/>
+        <Filename Value="etracer.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="ETracer"/>
       </Unit>
       <Unit>
         <Filename Value="src\et_main.pas"/>
@@ -76,7 +77,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="calc_et"/>
+      <Filename Value="etracer"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

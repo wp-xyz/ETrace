@@ -37,6 +37,7 @@ type
     constructor Create(APolarAngle, AEnergy, ABeamDiam: float; AFocus: TVector3);
     destructor Destroy; override;
     procedure  GenerateElectron(var Electron: TElectron; var E: float);
+    property Axis: TVector3 read FAxis;
     property BeamRadius: Float read FBeamRadius;
     property Energy: Float read FEnergy;
     property FocusedPoint: TVector3 read FFocusedPoint;
@@ -904,7 +905,7 @@ begin
     exit;
   end;
 
-  // Intersection with bottom plan (z = Depth)
+  // Intersection with bottom plane (z = Depth)
   Plane.Point.Z := Depth;
   db := rayXplane(ray, Plane, Point);
   if not IsNaN(db) and LessThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then

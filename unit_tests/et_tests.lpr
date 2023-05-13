@@ -3,7 +3,7 @@ program et_tests;
 {$mode objfpc}{$H+}
 
 uses
-  Interfaces, Forms, GuiTestRunner, etSampleTests;
+  Interfaces, Forms, GuiTestRunner, etMathTests, etSampleTests;
 
 {$R *.res}
 

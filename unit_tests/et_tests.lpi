@@ -41,6 +41,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="etSampleTests"/>
       </Unit>
+      <Unit>
+        <Filename Value="etmathtests.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="etMathTests"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -75,6 +80,9 @@
       </Item>
       <Item>
         <Name Value="EFOpenError"/>
+      </Item>
+      <Item>
+        <Name Value="EAssertionFailedError"/>
       </Item>
     </Exceptions>
   </Debugging>

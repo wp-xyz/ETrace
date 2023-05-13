@@ -22,6 +22,7 @@ type
   { TMainForm }
 
   TMainForm = class(TForm)
+    ApplicationProperties: TApplicationProperties;
     Bevel1: TBevel;
     btnRunSim: TButton;
     cbUseHoeslerAp: TCheckBox;
@@ -109,6 +110,7 @@ type
   private
     FEmissionPoints: array of TVector3;
     FTrajectories: array of TTrajectory;
+    FSampleHitPoint: TVector3;
     FRunning: Boolean;
     FAborted: Boolean;
     procedure DisplaySummary(ASimulation: TSimulation);
@@ -354,7 +356,7 @@ begin
   TrajectoriesChart.Title.Text.Add(Format('Primary energy: %.3g keV', [src.Energy]));
   TrajectoriesChart.Title.Text.Add(Format('Beam diameter: %.3g µm', [src.BeamRadius*2]));
   TrajectoriesChart.Title.Text.Add(Format('Incident angle: %.3g°', [src.PolarAngle]));
-  TrajectoriesChart.Title.Text.Add(Format('Sample: %s / %.3g µm %s on %s', [
+  TrajectoriesChart.Title.Text.Add(Format('Sample: %s, %.3g µm %s on %s', [
     cmbTopography.Items[cmbTopography.ItemIndex],
     abs(sample.zInterface),
     GetElementName(sample.Layer.Z, true),
@@ -708,6 +710,7 @@ begin
     BottomIntens := 0;
     TopIntens := 0;
     WallIntens := 0;
+    FSampleHitPoint := sim.SampleHitpoint;
     DepthTol := Max(sim.Layer.EscapeDepth, sim.Substrate.EscapeDepth) * 6;
     sim.Execute(sePrimElCount.Value);
     DisplaySummary(sim);
@@ -722,7 +725,6 @@ var
   s: String;
   section: String;
   savedFormatSettings: TFormatSettings;
-  d: Double;
 begin
   savedFormatSettings := FormatSettings;
   cfg := TIniFile.Create(CFG_FILE_NAME);
@@ -793,10 +795,11 @@ var
   ext: TDoubleRect;
   ray, plane: TRay;
   v: TVector3;
-  P: array of TPoint;
+  P: array of TPoint = nil;
   R: TRect;
   viewIndex: Integer;
   layerThk: Float;
+  d: Float;
 begin
   if Length(FTrajectories) = 0 then
     exit;
@@ -920,26 +923,36 @@ begin
   // Draw electron beam
   ADrawer.SetPenParams(psDash, clBlue, 3);
 
-  ray.Point := Vector3(seFocusX.Value, seFocusY.Value, seFocusZ.Value);
+  ray.Point := FSampleHitPoint;
   ray.Dir := Vector3(sin(DegToRad(seTiltAngle.Value)), 0, cos(DegToRad(seTiltAngle.Value)));
   plane.Point := Vector3(0, 0, ext.b.y);
   plane.Dir := Vector3(0, 0, 1);
-  rayXplane(ray, plane, v);
-  case ViewIndex of
-    0: ;
-    1:  // x-z plane
-      begin
-        P[0] := ASender.GraphToImage(DoublePoint(ray.Point.X, ray.Point.Z));
-        P[1] := ASender.GraphToImage(DoublePoint(v.X, v.Z));
-        ADrawer.Line(P[0], P[1]);
-      end;
-    2:  // y-z plane
-      begin
-        P[0] := ASender.GraphToImage(DoublePoint(ray.Point.Y, ray.Point.Z));
-        P[1] := ASender.GraphToImage(DoublePoint(v.Y, v.Z));
-        ADrawer.Line(P[0], P[1]);
-      end;
-  end;
+  d := rayXplane(ray, plane, v{%H-});
+
+                     (*
+  writeLn('ray.point: ', ray.point.x:0:3, ' ', ray.Point.y:0:3, ' ', ray.point.Z:0:3);
+  writeLn('ray.dir: ', ray.dir.x:0:3, ' ', ray.dir.y:0:3, ' ', ray.dir.Z:0:3);
+  writeLn('plane.point: ', plane.point.x:0:3, ' ', plane.Point.y:0:3, ' ', plane.point.Z:0:3);
+  writeLn('plane.dir: ', plane.dir.x:0:3, ' ', plane.dir.y:0:3, ' ', plane.dir.Z:0:3);
+  writeLn('v: ', v.x:0:3, ' ', v.y:0:3, ' ', v.Z:0:3);
+                       *)
+
+  if not IsNaN(d) then
+    case ViewIndex of
+      0: ; // x-y plane
+      1:   // x-z plane
+        begin
+          P[0] := ASender.GraphToImage(DoublePoint(ray.Point.X, ray.Point.Z));
+          P[1] := ASender.GraphToImage(DoublePoint(v.X, v.Z));
+          ADrawer.Line(P[0], P[1]);
+        end;
+      2:   // y-z plane
+        begin
+          P[0] := ASender.GraphToImage(DoublePoint(ray.Point.Y, ray.Point.Z));
+          P[1] := ASender.GraphToImage(DoublePoint(v.Y, v.Z));
+          ADrawer.Line(P[0], P[1]);
+        end;
+    end;
 
   ADrawer.ClippingStop;
 end;

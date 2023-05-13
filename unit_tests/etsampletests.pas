@@ -5,7 +5,7 @@ unit etSampleTests;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testutils, testregistry,
+  Classes, SysUtils, math, fpcunit, testutils, testregistry,
   et_Global, et_Objects, et_Math;
 
 type
@@ -150,9 +150,9 @@ begin
   intersects := sample.Intersection(ray, P, true);        // from outside
   expected := Vector3(0, 0, 0);
   AssertEquals('Stripe intersection not found in test #1', true, intersects);
-  AssertEquals('Stripe intersection point mismatch in test #1', expected.X, p.X, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #1', expected.Y, p.Y, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #1', expected.Z, p.Z, EPS);
+  AssertEquals('Stripe intersection point x mismatch in test #1', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #1', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #1', expected.Z, p.Z, EPS);
 
   // Test #1a: Electron flying downward in center of stripe, starting inside
   ray.Point := Vector3(0, 0, 0);
@@ -166,9 +166,9 @@ begin
   intersects := sample.Intersection(ray, P, false);      // from inside
   expected := Vector3(-WIDTH/2, 0, -HEIGHT/2);
   AssertEquals('Stripe intersection not found in test #2', true, intersects);
-  AssertEquals('Stripe intersection point mismatch in test #2', expected.X, p.X, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #2', expected.Y, p.Y, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #2', expected.Z, p.Z, EPS);
+  AssertEquals('Stripe intersection point x mismatch in test #2', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #2', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #2', expected.Z, p.Z, EPS);
 
   // Test #3: Electron flying horizontally from stripe center at half depth to right
   ray.Point := Vector3(0, 0, -HEIGHT/2);
@@ -176,9 +176,9 @@ begin
   intersects := sample.Intersection(ray, P, false);      // from inside
   expected := Vector3(WIDTH/2, 0, -HEIGHT/2);
   AssertEquals('Stripe intersection not found in test #3', true, intersects);
-  AssertEquals('Stripe intersection point mismatch in test #3', expected.X, p.X, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #3', expected.Y, p.Y, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #3', expected.Z, p.Z, EPS);
+  AssertEquals('Stripe intersection point x mismatch in test #3', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #3', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #3', expected.Z, p.Z, EPS);
 
   // Test #4: Electron flying horizontally from stripe center at half depth to right: changed from "from inside" to "from outside"
   ray.Point := Vector3(0, 0, -HEIGHT/2);
@@ -186,9 +186,9 @@ begin
   intersects := sample.Intersection(ray, P, true);      // from outside        // --> "from inside"/"from outside" parameter not necessary
   expected := Vector3(WIDTH/2, 0, -HEIGHT/2);
   AssertEquals('Stripe intersection not found in test #4', true, intersects);
-  AssertEquals('Stripe intersection point mismatch in test #4', expected.X, p.X, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #4', expected.Y, p.Y, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #4', expected.Z, p.Z, EPS);
+  AssertEquals('Stripe intersection point x mismatch in test #4', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #4', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #4', expected.Z, p.Z, EPS);
 
   // Test #5 Electron flying from center of stripe bottom upwards under 45°
   ray.Point := Vector3(0, 0, -HEIGHT);
@@ -197,9 +197,9 @@ begin
   intersects := sample.Intersection(ray, P, false);
   expected := Vector3(WIDTH/2, 0, -HEIGHT + WIDTH/2);
   AssertEquals('Stripe intersection not found in test #5', true, intersects);
-  AssertEquals('Stripe intersection point mismatch in test #5', expected.X, p.X, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #5', expected.Y, p.Y, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #5', expected.Z, p.Z, EPS);
+  AssertEquals('Stripe intersection point x mismatch in test #5', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #5', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #5', expected.Z, p.Z, EPS);
 
   // Test #6 Electron flying from hit point of Test #5 downwards under 45°
   ray.Point := Vector3(WIDTH/2 + 1e-9, 0, -HEIGHT + WIDTH/2);   // +1e-9 --> move away from stripe wall
@@ -208,9 +208,19 @@ begin
   intersects := sample.Intersection(ray, P, true);
   expected := Vector3(WIDTH, 0, -HEIGHT);
   AssertEquals('Stripe intersection not found in test #6', true, intersects);
-  AssertEquals('Stripe intersection point mismatch in test #6', expected.X, p.X, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #6', expected.Y, p.Y, EPS);
-  AssertEquals('Stripe intersection point mismatch in test #6', expected.Z, p.Z, EPS);
+  AssertEquals('Stripe intersection point x mismatch in test #6', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #6', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #6', expected.Z, p.Z, EPS);
+
+  // Test #7 Electron flying towards right sidewall under 60°, focused (intentionally) to bottom of stripe (0, 0, -HEIGHT)
+  ray.Dir := Vector3(-sin(DegToRad(60)), 0, -cos(DegToRad(60)));
+  ray.Point := Vector3(0, 0, -HEIGHT) + (-ray.Dir)*10.0;
+  intersects := sample.Intersection(ray, P, true);
+  expected := Vector3(WIDTH/2, 0, -HEIGHT + WIDTH/2/tan(DegToRad(60)));
+  AssertEquals('Stripe intersection not found in test #7', true, intersects);
+  AssertEquals('Stripe intersection point x mismatch in test #7', expected.X, p.X, EPS);
+  AssertEquals('Stripe intersection point y mismatch in test #7', expected.Y, p.Y, EPS);
+  AssertEquals('Stripe intersection point z mismatch in test #7', expected.Z, p.Z, EPS);
 
   sample.Free;
 end;

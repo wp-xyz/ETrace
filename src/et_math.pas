@@ -28,13 +28,15 @@ procedure SwapFloat(var x, y: Float);
 function Zero(x, Tol: Float): Boolean;
 
 function Vector3(x, y, z: Float): TVector3;
+function EmptyVector3: TVector3;
 
 procedure VecAssign(var A: TVector3; x, y, z: float);
 function ValidVector(V: TVector3): boolean;
 function DotProduct(const A, B: TVector3): float;
-procedure CrossProduct(const A, B: TVector3; var C: TVector3);
+procedure CrossProduct(const A, B: TVector3; var C: TVector3); overload;
+function CrossProduct(const A, B: TVector3): TVector3; overload;
 procedure VecAdd(const A,B: TVector3; var C: TVector3);
-procedure VecMulSc(VAR A:TVector3; x:float);
+procedure VecMulSc(var A:TVector3; x:float);
 procedure VecSub(const A, B: TVector3; var C: TVector3);
 function VecLength(const A: TVector3): float;
 procedure Normalize(var A: TVector3);
@@ -44,6 +46,11 @@ procedure Rotate(var V: TVector3; A: TVector3; Cos_phi,Sin_phi: Float);
 procedure RotateY(var V: TVector3; phi: float);
 function Distance(const A, B: TVector3): float;
 procedure MatMul(const Matrix: TMatrix3; var V, Res: TVector3);
+
+operator + (A, B: TVector3): TVector3;
+operator - (A, B: TVector3): TVector3;
+operator - (A: TVector3): TVector3;
+operator * (A: TVector3; x: Float): TVector3;
 
 function rayXplane(ray: TRay; Plane: TRay; var Point: TVector3): float;
 function rayXcyl(ray: TRay; r: float; var Point:TVector3; FarPoint: boolean): Float;
@@ -222,6 +229,13 @@ begin
   Result.Z := z;
 end;
 
+function EmptyVector3: TVector3;
+begin
+  Result.X := NaN;
+  Result.Y := NaN;
+  Result.Z := NaN;
+end;
+
 procedure VecAssign(var A: TVector3; x, y, z: float);
 begin
   A.X := x;
@@ -249,6 +263,13 @@ begin
   C.X := A.Y*B.Z - A.Z*B.Y;
   C.Y := A.Z*B.X - A.X*B.Z;
   C.Z := A.X*B.Y - A.Y*B.X;
+end;
+
+function CrossProduct(const A, B: TVector3): TVector3;
+begin
+  Result.X := A.Y*B.Z - A.Z*B.Y;
+  Result.Y := A.Z*B.X - A.X*B.Z;
+  Result.Z := A.X*B.Y - A.Y*B.X;
 end;
 
 { Vector sum C = A + B }
@@ -356,6 +377,37 @@ begin
 end;
 
 
+{ Vector operator overloading }
+
+operator + (A, B: TVector3): TVector3;
+begin
+  Result.X := A.X + B.X;
+  Result.Y := A.Y + B.Y;
+  Result.Z := A.Z + B.Z;
+end;
+
+operator - (A, B: TVector3): TVector3;
+begin
+  Result.X := A.X - B.X;
+  Result.Y := A.Y - B.Y;
+  Result.Z := A.Z - B.Z;
+end;
+
+operator - (A: TVector3): TVector3;
+begin
+  Result.X := -A.X;
+  Result.Y := -A.Y;
+  Result.Z := -A.Z;
+end;
+
+operator * (A: TVector3; x: Float): TVector3;
+begin
+  Result.X := A.X * x;
+  Result.Y := A.Y * x;
+  Result.Z := A.Z * x;
+end;
+
+
 (****************************************************************************)
 (*            Intersection of a straight line with geometric objects        *)
 (****************************************************************************)
@@ -374,27 +426,30 @@ function rayXplane(ray: TRay; Plane: TRay; var Point: TVector3): float;
 var
   lambda: float;
   V: TVector3;
-  parall: float;
+  dot: float;
 begin
   VecAssign(Point, NaN, NaN, NaN);
   Result := NaN;
 
-  VecSub(Plane.Point, Ray.Point, V);
-  parall := DotProduct(Plane.Dir, Ray.Dir);
+  V := Plane.Point - Ray.Point;
+//  VecSub(Plane.Point, Ray.Point, V);
+  dot := DotProduct(Plane.Dir, Ray.Dir);
   lambda := -1.0;
-  if not Zero(parall, FloatEps) then
+  if not Zero(dot, FloatEps) then
   begin
-    lambda := DotProduct(Plane.Dir, V)/parall;
+    lambda := DotProduct(Plane.Dir, V)/dot;
     if not Zero(lambda, FloatEps) then
     begin
-      VecMulSc(Ray.Dir, lambda);
-      VecAdd(Ray.Point, Ray.Dir, Point);
+      Point := Ray.Point + Ray.dir * lambda;
+//      VecMulSc(Ray.Dir, lambda);
+ //     VecAdd(Ray.Point, Ray.Dir, Point);
       Result := lambda;
     end;
   end;
   if Zero(Lambda,FloatEps) or (lambda<0.0) then
   begin
-    VecAssign(Point, NaN, NaN, NaN);
+    //VecAssign(Point, NaN, NaN, NaN);
+    Point := EmptyVector3;
     Result := NaN;
   end;
 end;

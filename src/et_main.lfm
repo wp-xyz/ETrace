@@ -101,6 +101,9 @@ object MainForm: TMainForm
                   Title.LabelBrush.Style = bsClear
                 end>
               Proportional = True
+              Title.Text.Strings = (
+                'TAChart'
+              )
               Title.TextFormat = tfHTML
               Title.Visible = True
               OnAfterDraw = TrajectoriesChartAfterDraw
@@ -978,5 +981,10 @@ object MainForm: TMainForm
     OnGetChartDataItem = EmissionPointsSourceGetChartDataItem
     Left = 624
     Top = 200
+  end
+  object ApplicationProperties: TApplicationProperties
+    ExceptionDialog = aedOkMessageBox
+    Left = 624
+    Top = 257
   end
 end

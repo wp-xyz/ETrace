@@ -34,11 +34,14 @@ type
     FLayer: TMaterial;
     FMaxPrimElectrons: Integer;
     FNumPrimElectrons: Integer;
+    FSampleHitPoint: TVector3;
     FAborted: Boolean;
     FErrorCode: Integer;
     FOnCancel: TCancelEvent;
     FOnDetection: TDetectionEvent;
     FOnTrajectoryComplete: TTrajectoryCompleteEvent;
+  private
+    function GetSampleHitPoint: TVector3;
   protected
     procedure CalcTrajectory(ElectronID: String; EMin: Float;
       var Electron: TElectron; var E: float; out ExitsSample: Boolean);
@@ -56,6 +59,7 @@ type
     property ElectronSource: TElectronSource read FElectronSource;
     property Layer: TMaterial read FLayer;
     property Sample: TSample read FSample;
+    property SampleHitPoint: TVector3 read GetSampleHitPoint;
     property Substrate: TMaterial read FSubstrate;
     property OnCancel: TCancelEvent read FOnCancel write FOnCancel;
     property OnDetection: TDetectionEvent read FOnDetection write FOnDetection;
@@ -199,6 +203,21 @@ begin
   end;
 
   Result := FErrorCode;
+end;
+
+function TSimulation.GetSampleHitPoint: TVector3;
+var
+  ray: TRay;
+begin
+  if (FElectronSource = nil) or (FSample = nil) then
+    Result := Vector3(NaN, NaN, NaN)
+  else
+  begin
+    ray.Point := FElectronSource.FocusedPoint;
+    ray.Dir := FElectronSource.Axis;
+    VecMulSc(ray.Dir, -1);
+    FSample.Intersection(ray, Result, true);
+  end;
 end;
 
 function TSimulation.InitMaterial(AMaterials: TMaterialsList;

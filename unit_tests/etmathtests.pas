@@ -72,8 +72,8 @@ begin
   Normalize(a);
   expected := Vector3(1/sqrt(21), 2/sqrt(21), 4/sqrt(21));  // calculated by Wolfram Alpha
   AssertEquals('Vector normalization result mismatch x', expected.x, a.x);
-  AssertEquals('Vector normalization  result mismatch y', expected.y, a.y);
-  AssertEquals('Vector normalization  result mismatch z', expected.z, a.z);
+  AssertEquals('Vector normalization result mismatch y', expected.y, a.y);
+  AssertEquals('Vector normalization result mismatch z', expected.z, a.z);
 
   // Angle between vectors
   a := Vector3( 8, 4, 1);

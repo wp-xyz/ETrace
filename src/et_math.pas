@@ -29,6 +29,7 @@ function Zero(x, Tol: Float): Boolean;
 
 function Vector3(x, y, z: Float): TVector3;
 function EmptyVector3: TVector3;
+function IsEmptyVector3(V: TVector3): Boolean;
 
 procedure VecAssign(var A: TVector3; x, y, z: float);
 function ValidVector(V: TVector3): boolean;
@@ -236,6 +237,11 @@ begin
   Result.Z := NaN;
 end;
 
+function IsEmptyVector3(V: TVector3): Boolean;
+begin
+  Result := IsNaN(V.X) or IsNaN(V.Y) or IsNaN(V.Z);
+end;
+
 procedure VecAssign(var A: TVector3; x, y, z: float);
 begin
   A.X := x;
@@ -438,6 +444,8 @@ begin
   if not Zero(dot, FloatEps) then
   begin
     lambda := DotProduct(Plane.Dir, V)/dot;
+    if IsNaN(lambda) then
+      Lambda := NaN;
     if not Zero(lambda, FloatEps) then
     begin
       Point := Ray.Point + Ray.dir * lambda;

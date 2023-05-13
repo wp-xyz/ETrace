@@ -920,14 +920,16 @@ begin
       end;
   end;
 
-  // Draw electron beam
-  ADrawer.SetPenParams(psDash, clBlue, 3);
+  if not IsEmptyVector3(FSampleHitPoint) then
+  begin
+    // Draw electron beam
+    ADrawer.SetPenParams(psDash, clBlue, 3);
 
-  ray.Point := FSampleHitPoint;
-  ray.Dir := Vector3(sin(DegToRad(seTiltAngle.Value)), 0, cos(DegToRad(seTiltAngle.Value)));
-  plane.Point := Vector3(0, 0, ext.b.y);
-  plane.Dir := Vector3(0, 0, 1);
-  d := rayXplane(ray, plane, v{%H-});
+    ray.Point := FSampleHitPoint;
+    ray.Dir := Vector3(sin(DegToRad(seTiltAngle.Value)), 0, cos(DegToRad(seTiltAngle.Value)));
+    plane.Point := Vector3(0, 0, ext.b.y);
+    plane.Dir := Vector3(0, 0, 1);
+    d := rayXplane(ray, plane, v{%H-});
 
                      (*
   writeLn('ray.point: ', ray.point.x:0:3, ' ', ray.Point.y:0:3, ' ', ray.point.Z:0:3);
@@ -937,22 +939,23 @@ begin
   writeLn('v: ', v.x:0:3, ' ', v.y:0:3, ' ', v.Z:0:3);
                        *)
 
-  if not IsNaN(d) then
-    case ViewIndex of
-      0: ; // x-y plane
-      1:   // x-z plane
-        begin
-          P[0] := ASender.GraphToImage(DoublePoint(ray.Point.X, ray.Point.Z));
-          P[1] := ASender.GraphToImage(DoublePoint(v.X, v.Z));
-          ADrawer.Line(P[0], P[1]);
-        end;
-      2:   // y-z plane
-        begin
-          P[0] := ASender.GraphToImage(DoublePoint(ray.Point.Y, ray.Point.Z));
-          P[1] := ASender.GraphToImage(DoublePoint(v.Y, v.Z));
-          ADrawer.Line(P[0], P[1]);
-        end;
-    end;
+    if not IsNaN(d) then
+      case ViewIndex of
+        0: ; // x-y plane
+        1:   // x-z plane
+          begin
+            P[0] := ASender.GraphToImage(DoublePoint(ray.Point.X, ray.Point.Z));
+            P[1] := ASender.GraphToImage(DoublePoint(v.X, v.Z));
+            ADrawer.Line(P[0], P[1]);
+          end;
+        2:   // y-z plane
+          begin
+            P[0] := ASender.GraphToImage(DoublePoint(ray.Point.Y, ray.Point.Z));
+            P[1] := ASender.GraphToImage(DoublePoint(v.Y, v.Z));
+            ADrawer.Line(P[0], P[1]);
+          end;
+      end;
+  end;
 
   ADrawer.ClippingStop;
 end;

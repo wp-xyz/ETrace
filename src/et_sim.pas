@@ -213,9 +213,8 @@ begin
     Result := Vector3(NaN, NaN, NaN)
   else
   begin
-    ray.Point := FElectronSource.FocusedPoint;
-    ray.Dir := FElectronSource.Axis;
-    VecMulSc(ray.Dir, -1);
+    ray.Point := FElectronSource.FocusedPoint + FElectronSource.Axis*10;
+    ray.Dir := -FElectronSource.Axis;
     FSample.Intersection(ray, Result, true);
   end;
 end;

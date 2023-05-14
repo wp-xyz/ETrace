@@ -897,7 +897,7 @@ begin
   Plane.Dir := SimParams.zAxis;
   Plane.Point := Vector3(0.0, 0.0, 0.0);
   dt := rayXplane(ray, Plane, Point);
-  if not IsNaN(dt) and GreaterThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
+  if not IsNaN(dt) and GreaterEqual(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
   begin
     Result := true;
     exit;
@@ -1006,7 +1006,7 @@ begin
   Plane.Point := Vector3(0.0, 0.0, 0.0);
   Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
-  if IsNaN(dt) or not Between(Point.X, -W2, W2, FloatEps) then
+  if IsNaN(dt) or not BetweenIncl(Point.X, -W2, W2, FloatEps) then
     dt := Infinity;  // use Infinity so that Min() can be called below
 
   // Intersection at the bottom
@@ -1122,8 +1122,8 @@ begin
     dt := Infinity
   else
     case Dir of
-      sdUp   : if not GreaterThan(Point.X, 0.0, FloatEps) then dt := Infinity;
-      sdDown : if not LessThan(Point.X, 0.0, FloatEps) then dt := Infinity;
+      sdUp   : if not GreaterEqual(Point.X, 0.0, FloatEps) then dt := Infinity;
+      sdDown : if not LessEqual(Point.X, 0.0, FloatEps) then dt := Infinity;
     end;
 
   Plane.Point.Z := Height;                  // Intersection at bottom

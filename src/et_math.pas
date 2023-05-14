@@ -16,9 +16,12 @@ const
   OneThird  = 1.0/3;                       // 1/3
   TwoThirds = 2.0/3;                       // 2/3
 
-function Between(x, lo, hi, Tol: Float): boolean;
+function Between(x, lo, hi, Tol: Float): Boolean;
+function BetweenIncl(x, lo, hi, Tol: Float): Boolean;
 function Equal(x, y, Tol: Float): Boolean;
+function GreaterEqual(x, y, tol: Float): Boolean;
 function GreaterThan(x, y, tol: Float): Boolean;
+function LessEqual(x, y, tol: Float): Boolean;
 function LessThan(x, y, tol: Float): Boolean;
 function Random_Gauss: Float;
 function Random_Cos: Float;
@@ -68,6 +71,13 @@ begin
   Result := (x > lo + Tol) and (x < Hi - Tol);
 end;
 
+{ dto., now including limits. }
+function BetweenIncl(x, lo, hi, Tol: Float): Boolean;
+begin
+  Result := (x >= lo - Tol) and (x <= Hi + Tol);
+end;
+
+
 { Returns true, when the two number X and Y are equal within the specified
   tolerance. Avoids rounding errors. }
 function Equal(x, y, Tol: Float): boolean;
@@ -75,14 +85,24 @@ begin
   Result := abs(x - y) < Tol;
 end;
 
+function GreaterEqual(x, y, tol: Float): Boolean;
+begin
+  Result := (x >= y-tol)
+end;
+
 function GreaterThan(x, y, tol: Float): Boolean;
 begin
-  Result := (x > y) and not Equal(x, y, tol);
+  Result := (x > y + tol); 
+end;
+
+function LessEqual(x, y, tol: Float): Boolean;
+begin
+  Result := (x <= y + tol);
 end;
 
 function LessThan(x, y, tol: Float): Boolean;
 begin
-  Result := (x < y) and not Equal(x, y, tol);
+  Result := (x < y - tol); 
 end;
 
 { Exchanges the values x and y }

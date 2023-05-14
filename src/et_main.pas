@@ -8,7 +8,7 @@ uses
   // RTL, FCL
   Classes, SysUtils, IniFiles, Math,
   // LCL
-  Forms, Controls, Graphics, Dialogs, StdCtrls,
+  LCLType, LCLIntf, Forms, Controls, Graphics, Dialogs, StdCtrls,
   Spin, ExtCtrls, ComCtrls, Buttons,
   // TAChart
   TAGraph, TAChartUtils, TAGeometry, TADrawUtils,
@@ -126,6 +126,9 @@ type
     procedure RunSimulation;
     procedure SaveParamsToCfg;
     procedure UpdateCtrlState(AEnabled: Boolean);
+
+    procedure ReadIni;
+    procedure WriteIni;
 
     // Event handlers
     procedure CancelHandler(ASimulation: TSimulation; var Cancel: Boolean);
@@ -441,6 +444,8 @@ begin
   EmissionPointsChartExtentChange(nil);
   TrajectoriesChartExtentChange(nil);
 
+  ReadIni;
+
   LoadParamsFromCfg;
   ParamsToGui(SimParams);
 end;
@@ -449,6 +454,7 @@ procedure TMainForm.FormDestroy(Sender: TObject);
 begin
   GuiToParams(SimParams);
   SaveParamsToCfg;
+  WriteIni;
 end;
 
 function TMainForm.GetProjection: TProjection;
@@ -693,6 +699,43 @@ begin
 
   // Clear emission points chart
   EmissionPointsSource.PointsNumber := 0;
+end;
+
+procedure TMainForm.ReadIni;
+var
+  fn: String;
+  ini: TCustomIniFile;
+  L, T, W, H: Integer;
+  R: TRect;
+begin
+  fn := ChangeFileExt(GetAppConfigFile(false), '.ini');;
+  ini := TIniFile.Create(fn);
+  try
+    T := ini.ReadInteger('MainForm', 'Top', Top);
+    L := ini.ReadInteger('MainForm', 'Left', Left);
+    W := ini.ReadInteger('MainForm', 'Width', Width);
+    H := ini.ReadInteger('MainForm', 'Height', Height);
+    R := Screen.WorkAreaRect;
+    if W > R.Width then W := R.Width;
+    if H > R.Height then H := R.Height;
+    if L < R.Left then L := R.Left;
+    if T < R.Top then T := R.Top;
+    if L + W > R.Right then L := R.Right - W - GetSystemMetrics(SM_CXSIZEFRAME);
+    if T + H > R.Bottom then T := R.Bottom - H - GetSystemMetrics(SM_CYCAPTION) - GetSystemMetrics(SM_CYSIZEFRAME);
+    SetBounds(L, T, W, H);
+    WindowState := wsNormal;
+    Application.ProcessMessages;
+    ResultsPageControl.ActivePageIndex := ini.ReadInteger('MainForm', 'ResultsPage', ResultsPageControl.ActivePageIndex);
+    EmissionPointsPageControl.ActivePageIndex := ini.ReadInteger('MainForm', 'EmissionPointsPage', EmissionPointsPageControl.ActivePageIndex);
+    seEmissionPointsHorMin.Value := ini.ReadFloat('MainForm', 'EmissionPointsHorMin', seEmissionPointsHorMin.Value);
+    seEmissionPointsHorMax.Value := ini.ReadFloat('MainForm', 'EmissionPointsHorMax', seEmissionPointsHorMax.Value);
+    rgProjection.ItemIndex := ini.ReadInteger('MainForm', 'TrajectoriesProjection', rgProjection.itemIndex);
+    seTrajectories.Value := ini.ReadInteger('MainForm', 'TrajectoryCount', seTrajectories.Value);
+    seTrajectoryHorMin.Value := ini.ReadFloat('MainForm', 'TrajectoriesHorMin', seTrajectoryHorMin.Value);
+    seTrajectoryHorMax.Value := ini.ReadFloat('MainForm', 'TrajectoriesHorMax', seTrajectoryHorMax.Value);
+  finally
+    ini.Free;
+  end;
 end;
 
 procedure TMainForm.RunSimulation;
@@ -1016,6 +1059,48 @@ begin
   gbEGun.Enabled := AEnabled;
   gbAnalyzer.Enabled := AEnabled;
   gbSample.Enabled := AEnabled;
+end;
+
+procedure TMainForm.WriteIni;
+var
+  fn: String;
+  ini: TIniFile;
+  L, T, W, H: Integer;
+begin
+  fn := ChangeFileExt(GetAppConfigFile(false), '.ini');;
+  ini := TIniFile.Create(fn);
+  try
+    if WindowState = wsMaximized then
+    begin
+      L := RestoredLeft;
+      T := RestoredTop;
+      W := RestoredWidth;
+      H := RestoredHeight;
+    end else
+    begin
+      L := Left;
+      T := Top;
+      W := Width;
+      H := Height;
+    end;
+
+    ini.WriteInteger('MainForm', 'Top', T);
+    ini.WriteInteger('MainForm', 'Left', L);
+    ini.WriteInteger('MainForm', 'Width', W);
+    ini.WriteInteger('MainForm', 'Height', H);
+    ini.WriteInteger('MainForm', 'WindowState', Integer(WindowState));
+
+    ini.WriteInteger('MainForm', 'ResultsPage', ResultsPageControl.ActivePageIndex);
+    ini.WriteInteger('MainForm', 'EmissionPointsPage', EmissionPointsPageControl.ActivePageIndex);
+    ini.WriteFloat('MainForm', 'EmissionPointsHorMin', seEmissionPointsHorMin.Value);
+    ini.WriteFloat('MainForm', 'EmissionPointsHorMax', seEmissionPointsHorMax.Value);
+    ini.WriteInteger('MainForm', 'TrajectoriesProjection', rgProjection.itemIndex);
+    ini.WriteInteger('MainForm', 'TrajectoryCount', seTrajectories.Value);
+    ini.WriteFloat('MainForm', 'TrajectoriesHorMin', seTrajectoryHorMin.Value);
+    ini.WriteFloat('MainForm', 'TrajectoriesHorMax', seTrajectoryHorMax.Value);
+  finally
+    ini.Free;
+  end;
 end;
 
 end.

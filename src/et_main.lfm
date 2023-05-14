@@ -102,7 +102,7 @@ object MainForm: TMainForm
                 end>
               Proportional = True
               Title.Text.Strings = (
-                'TAChart'
+                ''
               )
               Title.TextFormat = tfHTML
               Title.Visible = True

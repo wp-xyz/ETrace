@@ -29,24 +29,20 @@ function Zero(x, Tol: Float): Boolean;
 
 function Vector3(x, y, z: Float): TVector3;
 function EmptyVector3: TVector3;
-function IsEmptyVector3(V: TVector3): Boolean;
+//function IsEmptyVector3(V: TVector3): Boolean;
 
-procedure VecAssign(var A: TVector3; x, y, z: float);
+//procedure VecAssign(var A: TVector3; x, y, z: float);
 function ValidVector(V: TVector3): boolean;
 function DotProduct(const A, B: TVector3): float;
-procedure CrossProduct(const A, B: TVector3; var C: TVector3); overload;
 function CrossProduct(const A, B: TVector3): TVector3; overload;
-procedure VecAdd(const A,B: TVector3; var C: TVector3);
-procedure VecMulSc(var A:TVector3; x:float);
-procedure VecSub(const A, B: TVector3; var C: TVector3);
 function VecLength(const A: TVector3): float;
-procedure Normalize(var A: TVector3);
+function VecNormalize(const A: TVector3): TVector3; overload;
+function VecNormalize(X, Y, Z: Float): TVector3; overload;
 function VecAngle(const A, B: TVector3): float;
-procedure Rotate(var V, A: TVector3; phi: Float);
+function VecRotate(const V, A: TVector3; phi: Float): TVector3;
 procedure Rotate(var V: TVector3; A: TVector3; Cos_phi,Sin_phi: Float);
-procedure RotateY(var V: TVector3; phi: float);
+function VecRotateY(const V: TVector3; phi: float): TVector3;
 function Distance(const A, B: TVector3): float;
-procedure MatMul(const Matrix: TMatrix3; var V, Res: TVector3);
 
 operator + (A, B: TVector3): TVector3;
 operator - (A, B: TVector3): TVector3;
@@ -236,7 +232,7 @@ begin
   Result.Y := NaN;
   Result.Z := NaN;
 end;
-
+  {
 function IsEmptyVector3(V: TVector3): Boolean;
 begin
   Result := IsNaN(V.X) or IsNaN(V.Y) or IsNaN(V.Z);
@@ -248,7 +244,7 @@ begin
   A.Y := y;
   A.Z := z;
 end;
-
+}
 { Checks whether there is any component of the vector V which is mEmpty.
   Such a vector might be created in case of the intersection routines, if
   there is no intersection of the line with the geometric object. }
@@ -264,13 +260,6 @@ begin
 end;
 
 { Calculates the cross product of the vector A and B. }
-procedure CrossProduct(const A, B: TVector3; var C: TVector3);
-begin
-  C.X := A.Y*B.Z - A.Z*B.Y;
-  C.Y := A.Z*B.X - A.X*B.Z;
-  C.Z := A.X*B.Y - A.Y*B.X;
-end;
-
 function CrossProduct(const A, B: TVector3): TVector3;
 begin
   Result.X := A.Y*B.Z - A.Z*B.Y;
@@ -278,42 +267,21 @@ begin
   Result.Z := A.X*B.Y - A.Y*B.X;
 end;
 
-{ Vector sum C = A + B }
-procedure VecAdd(const A,B: TVector3; var C: TVector3);
-begin
-  C.X := A.X + B.X;
-  C.Y := A.Y + B.Y;
-  C.Z := A.Z + B.Z;
-end;
-
-{ Multiplies the vector A by the scalar x }
-procedure VecMulSc(VAR A:TVector3; x:float);
-begin
-  A.X := A.X * x;
-  A.Y := A.Y * x;
-  A.Z := A.Z * x;
-end;
-
-{ Vector difference C = A-B }
-procedure VecSub(const A, B: TVector3; var C: TVector3);
-begin
-  C.X := A.X - B.X;
-  C.Y := A.Y - B.Y;
-  C.Z := A.Z - B.Z;
-end;
-
+{ Calculates the length of vector A }
 function VecLength(const A: TVector3): float;
 begin
   Result := Sqrt(DotProduct(A, A));
 end;
 
 { Normalizes the vector A to length 1 }
-procedure Normalize(var A: TVector3);
-var
-  L: float;   { reciprocal length of the vector A }
+function VecNormalize(const A: TVector3): TVector3;
 begin
-  L := 1.0 / VecLength(A);
-  VecMulSc(A, L);
+  Result := A * (1.0 / VecLength(A));
+end;
+
+function VecNormalize(X, Y, Z: Float): TVector3;
+begin
+  Result := VecNormalize(Vector3(X, Y, Z));
 end;
 
 { Calculates the angle (in radians) between the unit vectors A and B. }
@@ -323,15 +291,21 @@ begin
 end;
 
 { Rotates the vector V by the angle phi (in radians) around the axis A and
-  returns the rotated vector in V. }
-procedure Rotate(var V, A: TVector3; phi: Float);
+  returns the rotated vector in V.
+  A must be unit vector. }
+function VecRotate(const V, A: TVector3; phi: Float): TVector3;
+var
+  cPhi, sPhi: Float;
 begin
-  Normalize(A);
-  Rotate(V, A, cos(phi), sin(phi));
+//  Normalize(A);
+  SinCos(phi, sPhi, cPhi);
+  Result := V;
+  Rotate(Result, A, cPhi, sPhi);
 end;
 
 { Rotates the vector V by the angle phi (in radians) around the axis A and
   returns the rotated vector in V.
+  A must be a unit vector.
   Note that the rotation angle phi is not given explicitely, but only by its
   cosine and sine values in order to be able to call the vector rotation from
   the Monte-Carlo simulation efficiently since it provides the angle just like
@@ -340,51 +314,37 @@ procedure Rotate(var V: TVector3; A: TVector3; Cos_phi,Sin_phi: Float);
 var
   V1, V2 : TVector3;
 begin
-  Normalize(A);
   Cos_phi := 1.0 - Cos_phi;
-  CrossProduct(A,V, V1);
-  CrossProduct(A,V1,V2);
+  V1 := CrossProduct(A, V);
+  V2 := CrossProduct(A, V1);
   V.X  := V.X + Sin_phi*V1.X + Cos_phi*V2.X;
   V.Y  := V.Y + Sin_phi*V1.Y + Cos_phi*V2.Y;
   V.Z  := V.Z + Sin_phi*V1.Z + Cos_phi*V2.Z;
 end;
 
 { Rotates the vector V around the y axis by the angle phi and returns the
-  rotated angle in V. }
-procedure RotateY(var V: TVector3; phi: float);
+  rotated angle. phi is positive for a counter-clockwise rotation viewed along
+  the y axis towards positive values. }
+function VecRotateY(const V: TVector3; phi: float): TVector3;
 var
   SPhi, CPhi: float;
-  tmp: TVector3;
 begin
-  SPhi := Sin(phi);
-  CPhi := Cos(phi);
-  tmp.X := CPhi*V.X + SPhi*V.Z;
-  tmp.Y := V.Y;
-  tmp.Z := -SPhi*V.X + CPhi*V.Z;
-  V := tmp;
+  SinCos(phi, SPhi, CPhi);
+  Result.X := CPhi*V.X + SPhi*V.Z;
+  Result.Y := V.Y;
+  Result.Z := -SPhi*V.X + CPhi*V.Z;
 end;
 
 { Calculates the distance between the points A and B (= length of vector B-A) }
 function Distance(const A, B: TVector3): float;
-var
-  C: TVector3;
 begin
-  VecSub(A, B, C);
-  result := VecLength(C);
-end;
-
-{ Multiplies the given matrix by the vector V and returns the resulting vector
-  in Res. }
-procedure MatMul(const Matrix: TMatrix3; var V, Res: TVector3);
-begin
-  Res.X := Matrix[1].X*V.X + Matrix[2].X*V.Y + Matrix[3].X*V.Z;
-  Res.Y := Matrix[1].Y*V.X + Matrix[2].Y*V.Y + Matrix[3].Y*V.Z;
-  Res.Z := Matrix[1].Z*V.X + Matrix[2].Z*V.Y + Matrix[3].Z*V.Z;
+  result := VecLength(A - B);
 end;
 
 
 { Vector operator overloading }
 
+{ Sum of vectors A and B }
 operator + (A, B: TVector3): TVector3;
 begin
   Result.X := A.X + B.X;
@@ -392,6 +352,7 @@ begin
   Result.Z := A.Z + B.Z;
 end;
 
+{ Difference of vectors A and B }
 operator - (A, B: TVector3): TVector3;
 begin
   Result.X := A.X - B.X;
@@ -399,6 +360,7 @@ begin
   Result.Z := A.Z - B.Z;
 end;
 
+{ Inversion of vector A }
 operator - (A: TVector3): TVector3;
 begin
   Result.X := -A.X;
@@ -406,6 +368,7 @@ begin
   Result.Z := -A.Z;
 end;
 
+{ Product of vector A with scalar x }
 operator * (A: TVector3; x: Float): TVector3;
 begin
   Result.X := A.X * x;
@@ -434,29 +397,23 @@ var
   V: TVector3;
   dot: float;
 begin
-  VecAssign(Point, NaN, NaN, NaN);
+  Point := EmptyVector3;
   Result := NaN;
 
   V := Plane.Point - Ray.Point;
-//  VecSub(Plane.Point, Ray.Point, V);
   dot := DotProduct(Plane.Dir, Ray.Dir);
   lambda := -1.0;
   if not Zero(dot, FloatEps) then
   begin
     lambda := DotProduct(Plane.Dir, V)/dot;
-    if IsNaN(lambda) then
-      Lambda := NaN;
     if not Zero(lambda, FloatEps) then
     begin
       Point := Ray.Point + Ray.dir * lambda;
-//      VecMulSc(Ray.Dir, lambda);
- //     VecAdd(Ray.Point, Ray.Dir, Point);
       Result := lambda;
     end;
   end;
-  if Zero(Lambda,FloatEps) or (lambda<0.0) then
+  if Zero(lambda, FloatEps) or (lambda < 0.0) then
   begin
-    //VecAssign(Point, NaN, NaN, NaN);
     Point := EmptyVector3;
     Result := NaN;
   end;
@@ -493,7 +450,7 @@ function rayXcyl(ray: TRay; r: float; var Point:TVector3; FarPoint: boolean): Fl
 var
   A, B, C, my, my1: float;
 begin
-  VecAssign(Point, NaN, NaN, NaN);
+  Point := EmptyVector3();
   Result := NaN;
 
   with Ray do
@@ -514,8 +471,7 @@ begin
     else
     if my <= 0.0 then
       my := my1;
-    VecMulSc(Ray.Dir, my);
-    VecAdd(Ray.Point, Ray.Dir, Point);
+    Point := Ray.Point + Ray.Dir * my;
     Result := my;
   end;
 end;

@@ -131,8 +131,8 @@ begin
       inc(n);
       if FSample.Outside(Point) then
       begin
-        Ray := Electron.Ray;       // The electron has left the sample
-        VecMulSc(Ray.Dir, -1.0);   // Determine the point of emission
+        Ray := Electron.Ray;    // The electron has left the sample
+        Ray.Dir := -Ray.Dir;    // Determine the point of emission
         if FSample.Intersection(Ray, P, FROM_INSIDE) then
           Point := P;
         ExitsSample := true;

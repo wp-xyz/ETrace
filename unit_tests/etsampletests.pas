@@ -107,8 +107,7 @@ begin
 
   // Test #5 Electron flying from center of c.h. bottom upwards under 45°
   ray.Point := Vector3(0, 0, -DEPTH);
-  ray.Dir := Vector3(1, 0, 1);
-  Normalize(ray.Dir);
+  ray.Dir := VecNormalize(1, 0, 1);
   intersects := sample.Intersection(ray, P, true);
   expected := Vector3(R, 0, -DEPTH + R);
   AssertEquals('Intersection not found in test #5', true, intersects);
@@ -118,8 +117,7 @@ begin
 
   // Test #6 Electron flying from hit point of Test #6 upwards under 45°
   ray.Point := Vector3(R+1e-9, 0, -DEPTH + R);   // +1e-9 --> move away from contact hole wall
-  ray.Dir := Vector3(1, 0, 1);
-  Normalize(ray.Dir);
+  ray.Dir := VecNormalize(1, 0, 1);
   intersects := sample.Intersection(ray, P, false);
   expected := Vector3(DEPTH, 0, 0);
   AssertEquals('Intersection not found in test #6', true, intersects);
@@ -192,8 +190,7 @@ begin
 
   // Test #5 Electron flying from center of stripe bottom upwards under 45°
   ray.Point := Vector3(0, 0, -HEIGHT);
-  ray.Dir := Vector3(1, 0, 1);
-  Normalize(ray.Dir);
+  ray.Dir := VecNormalize(1, 0, 1);
   intersects := sample.Intersection(ray, P, false);
   expected := Vector3(WIDTH/2, 0, -HEIGHT + WIDTH/2);
   AssertEquals('Stripe intersection not found in test #5', true, intersects);
@@ -203,8 +200,7 @@ begin
 
   // Test #6 Electron flying from hit point of Test #5 downwards under 45°
   ray.Point := Vector3(WIDTH/2 + 1e-9, 0, -HEIGHT + WIDTH/2);   // +1e-9 --> move away from stripe wall
-  ray.Dir := Vector3(1, 0, -1);
-  Normalize(ray.Dir);
+  ray.Dir := VecNormalize(1, 0, -1);
   intersects := sample.Intersection(ray, P, true);
   expected := Vector3(WIDTH, 0, -HEIGHT);
   AssertEquals('Stripe intersection not found in test #6', true, intersects);

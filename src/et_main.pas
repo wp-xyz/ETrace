@@ -920,7 +920,7 @@ begin
       end;
   end;
 
-  if not IsEmptyVector3(FSampleHitPoint) then
+  if ValidVector(FSampleHitPoint) then
   begin
     // Draw electron beam
     ADrawer.SetPenParams(psDash, clBlue, 3);

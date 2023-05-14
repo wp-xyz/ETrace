@@ -350,11 +350,12 @@ begin
   phi := Random * TwoPi;
   V.Z := 0.0;
   CylToCart(r,phi, V.X, V.Y);
-  RotateY(V, FTheta);
-  Electron.Ray.Dir := FAxis;
-  VecMulSc(Electron.Ray.Dir, -1.0);
-  VecAdd(FocusedPoint, V, Electron.Ray.Point);
-  VecAdd(FAxis, Electron.Ray.Point, Electron.Ray.Point);
+  V := VecRotateY(V, FTheta);
+  Electron.Ray.Dir := -FAxis;
+  Electron.Ray.Point := FAxis + FocusedPoint + V;
+  //VecMulSc(Electron.Ray.Dir, -1.0);
+  //VecAdd(FocusedPoint, V, Electron.Ray.Point);
+  //VecAdd(FAxis, Electron.Ray.Point, Electron.Ray.Point);
   Electron.Weight := 1.0;                               { not at surface }
   E := FEnergy;
   inc(FNumFired);
@@ -393,7 +394,7 @@ end;
 function TAnalyzer.Detect(var Electron: TAugerElectron): Integer;
 var
   tmp: float;
-  AX: TVector3 = (X: 0.0; Y: 0.0; Z: 0.0);  // to silence the compiler
+  AX: TVector3; // = (X: 0.0; Y: 0.0; Z: 0.0);  // to silence the compiler
   P: TVector3 = (X: 0.0; Y:0.0; Z: 0.0);
 begin
   tmp := DotProduct(Electron.Ray.Dir, FAxis);
@@ -410,17 +411,16 @@ begin
       azimutally. }
     if FRestricted then
     begin
-      with FAxis do VecAssign(AX, X,Y,Z);
-      Normalize(Electron.Ray.Dir);
-      VecMulSc(AX, DotProduct(Electron.Ray.Dir, AX));
+//      AX := FAxis;
+      Electron.Ray.Dir := VecNormalize(Electron.Ray.Dir);
+      AX := FAxis * DotProduct(Electron.Ray.Dir, FAxis);
         { component of the beam projected onto the axis }
-      VecSub(Electron.Ray.Dir, AX, P);
-      Normalize(P);
+      P := Electron.Ray.Dir - AX;
+      P := VecNormalize(P);
       { P is the projection of the electron beam onto the plane normal to the
         analyzer axis. }
 
-      VecAssign(AX, FAxis.Z, 0.0, -FAxis.X);
-      Normalize(AX);
+      AX := VecNormalize(FAxis.Z, 0.0, -FAxis.X);
       tmp := VecAngle(AX, P);    { Angle between projection and x plane }
       if (tmp < FSectorFrom) or (tmp > FSectorTo) then
         Exit;
@@ -831,17 +831,15 @@ begin
   psi := VecAngle(Electron.Ray.Dir, SimParams.zAxis);
 
   if Equal(psi, Pi, 1E-5) then     { old direction is anti-parallel to z }
-    VecMulSc(Dir, -1.0)
+    Dir := -Dir
   else
   if not Zero(psi, 1E-5) then      { old direction is arbitrary }
   begin
-    with Electron.Ray.Dir do VecAssign(RotAx, -Y, X, 0.0);
-    Rotate(Dir, RotAx, psi);
+    RotAx := VecNormalize(-Electron.Ray.Dir.Y, Electron.Ray.Dir.X, 0.0);
+    Dir := VecRotate(Dir, RotAx, psi);
   end;
   Electron.Ray.Dir := Dir;
-  VecMulSc(Dir, Step);
-  Point := Electron.Ray.Point;
-  VecAdd(Point, Dir, Electron.Ray.Point);
+  Electron.Ray.Point := Electron.Ray.Point + Dir * Step;
 
   { *** 5 - Final energy: Energy loss = path length * stopping power **** }
 
@@ -897,7 +895,7 @@ begin
 
   // Intersection with top plane (z = 0)
   Plane.Dir := SimParams.zAxis;
-  VecAssign(Plane.Point, 0.0, 0.0, 0.0);
+  Plane.Point := Vector3(0.0, 0.0, 0.0);
   dt := rayXplane(ray, Plane, Point);
   if not IsNaN(dt) and GreaterThan(sqr(Point.X) + sqr(Point.Y), R2, FloatEps) then
   begin
@@ -915,7 +913,7 @@ begin
   end;
 
   Result := false;
-  VecAssign(Point, NaN, NaN, NaN);
+  Point := EmptyVector3;
 end;
 
 function TContactHole.OnSurface(Point: TVector3): Boolean;
@@ -1005,7 +1003,7 @@ begin
   W2 := Width*0.5;     // half width
 
   // Intersection at the top
-  VecAssign(Plane.Point, 0.0, 0.0, 0.0);
+  Plane.Point := Vector3(0.0, 0.0, 0.0);
   Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
   if IsNaN(dt) or not Between(Point.X, -W2, W2, FloatEps) then
@@ -1018,8 +1016,8 @@ begin
     db := Infinity;
 
   // Right sidewall
-  VecAssign(Plane.Point, W2, 0.0, 0.0);
-  VecAssign(Plane.Dir, 1.0, 0.0, 0.0);
+  Plane.Point := Vector3(W2, 0.0, 0.0);
+  Plane.Dir := Vector3(1.0, 0.0, 0.0);
   dr := rayXplane(ray, Plane, Point);
   if IsNaN(dr) or not Between(Point.Z, Height, 0.0, floateps) then    // Height is negative!
     dr := Infinity;
@@ -1034,12 +1032,11 @@ begin
   dt := Min(dt, Min(db, Min(dr, DL)));
   if dt < Infinity then
   begin
-    VecMulSc(Ray.Dir, dt);
-    VecAdd(Ray.Point, Ray.Dir, Point);
+    Point := Ray.Point + Ray.Dir * dt;
     Result := true;
   end else
   begin
-    VecAssign(Point, NaN, NaN, NaN);
+    Point := EmptyVector3();
     Result := false
   end;
 end;
@@ -1075,9 +1072,9 @@ var
 begin
   W := Width * 0.5;
   if Equal(Abs(Point.X), W, FloatEps) then
-    VecAssign(Normal, sign(Point.X), 0.0, 0.0)
+    Normal := Vector3(sign(Point.X), 0.0, 0.0)
   else
-    VecAssign(Normal, 0.0, 0.0, 1.0);
+    Normal := Vector3(0.0, 0.0, 1.0);
 end;
 
 
@@ -1118,7 +1115,7 @@ var
 begin
   Plane := Default(TRay);  // to silence the compiler
 
-  VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { Intersection at the top }
+  Plane.Point := Vector3(0.0, 0.0, 0.0);    // Intersection at the top
   Plane.Dir := SimParams.zAxis;
   dt := rayXplane(ray, Plane, Point);
   if IsNaN(dt) then
@@ -1129,7 +1126,7 @@ begin
       sdDown : if not LessThan(Point.X, 0.0, FloatEps) then dt := Infinity;
     end;
 
-  Plane.Point.Z := Height;                  { Intersection at bottom }
+  Plane.Point.Z := Height;                  // Intersection at bottom
   db := rayXplane(ray, Plane, Point);
   if IsNaN(db) then
     db := Infinity
@@ -1139,21 +1136,20 @@ begin
       sdDown : if not GreaterThan(Point.X, 0.0, FloatEps) then db := Infinity;
     end;
 
-  VecAssign(Plane.Point, 0.0, 0.0, 0.0);    { edge }
+  Plane.Point := Vector3(0.0, 0.0, 0.0);    // edge
   SurfNormal(Plane.Point, Plane.Dir);
   dw := rayXplane(ray, Plane, Point);
-  if IsNaN(dw) or not Between(Point.Z, Height,0.0, Floateps) then
+  if IsNaN(dw) or not Between(Point.Z, Height,0.0, FloatEps) then
     dw := Infinity;
 
   dt := Min(dt, Min(db, dw));
   if dt < Infinity then
   begin
-    VecMulSc(Ray.Dir, dt);
-    VecAdd(Ray.Point, Ray.Dir, Point);
+    Point := Ray.Point + Ray.Dir * dt;
     Result := true;
   end else
   begin
-    VecAssign(Point, NaN, NaN, NaN);
+    Point := EmptyVector3();
     Result := false;
   end;
 end;
@@ -1196,11 +1192,11 @@ end;
 procedure TStep.SurfNormal(Point: TVector3; var Normal: TVector3);
 begin
   if not Zero(Point.X, FloatEps) then
-    VecAssign(Normal, 0.0, 0.0, 1.0)
+    Normal := Vector3(0.0, 0.0, 1.0)
   else
     case Dir of
-      sdUp   : VecAssign(Normal, -1.0, 0.0, 0.0);
-      sdDown : VecAssign(Normal,  1.0, 0.0, 0.0);
+      sdUp   : Normal := Vector3(-1.0, 0.0, 0.0);
+      sdDown : Normal := Vector3(+1.0, 0.0, 0.0);
     end;
 end;
 

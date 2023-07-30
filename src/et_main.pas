@@ -113,6 +113,7 @@ type
     FSampleHitPoint: TVector3;
     FRunning: Boolean;
     FAborted: Boolean;
+    FActivated: Boolean;
     procedure DisplaySummary(ASimulation: TSimulation);
     function GetProjection: TProjection;
     function GetSelectedAnalyzer: TAnalyzerType;
@@ -421,10 +422,18 @@ end;
 
 procedure TMainForm.FormActivate(Sender: TObject);
 begin
-  btnRunSim.Constraints.MinWidth := btnRunSim.Width;
-  ParamsPanel.Constraints.MinHeight := gbSample.Top + gbSample.Height +
-    btnRunSim.BorderSpacing.Top + btnRunSim.Height;
-  Constraints.MinHeight := ParamsPanel.Constraints.MinHeight + 2*ParamsPanel.BorderSpacing.Around;
+  if not FActivated then
+  begin
+    ReadIni;
+
+    LoadParamsFromCfg;
+    ParamsToGui(SimParams);
+
+    btnRunSim.Constraints.MinWidth := btnRunSim.Width;
+    ParamsPanel.Constraints.MinHeight := gbSample.Top + gbSample.Height +
+      btnRunSim.BorderSpacing.Top + btnRunSim.Height;
+    Constraints.MinHeight := ParamsPanel.Constraints.MinHeight + 2*ParamsPanel.BorderSpacing.Around;
+  end;
 end;
 
 procedure TMainForm.FormCreate(Sender: TObject);
@@ -443,11 +452,6 @@ begin
 
   EmissionPointsChartExtentChange(nil);
   TrajectoriesChartExtentChange(nil);
-
-  ReadIni;
-
-  LoadParamsFromCfg;
-  ParamsToGui(SimParams);
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);

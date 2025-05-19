@@ -8,6 +8,37 @@ ETrace is a Free Pascal project designed for simulating electron trajectories an
 
 The project provides a framework for defining electron sources, sample geometries (including simple flat surfaces, contact holes, stripes, and steps), and electron analyzers. It traces individual primary and scattered electron trajectories, simulates Auger electron generation, and calculates the detected signal.
 
+## Real-World Applications and Problem Solving
+
+ETrace, as a simulation tool for electron-sample interactions and Auger electron emission, can be applied to various practical problems in materials science, surface physics, and analytical microscopy. It provides a virtual laboratory for investigating phenomena relevant to techniques like Auger Electron Spectroscopy (AES) and Scanning Electron Microscopy (SEM).
+
+*   **Understanding and Interpreting AES Spectra**: Simulate electron trajectories, energy loss, scattering events, Auger generation, and escape from specific material compositions and structures. This helps in understanding how the detected Auger signal intensity and shape are influenced by fundamental processes. Comparing simulated results with experimental AES spectra can aid in deconvoluting complex spectra or identifying contributions from different depths or sample regions.
+*   **Optimizing Experimental Parameters**: Investigate the effect of changing electron beam parameters (e.g., primary energy using `TSimParams.PrimaryEnergy`, beam diameter using `TSimParams.BeamDiameter`) or analyzer geometry (e.g., polar/azimuthal angles via analyzer configuration, sector angles using `TSimParams.SectorStart`/`SectorEnd`) on the detected Auger signal for a given sample. This allows researchers to optimize their experimental setup for maximum signal-to-noise ratio, sensitivity to specific elements, or enhanced spatial resolution.
+*   **Analyzing Topographical Effects on Signal and Resolution**: Study how non-flat surface topographies (simulated using `TContactHole`, `TStripe`, `TStep` classes and `TSimParams.Topography`, `Width`, `Depth`, `LayerThickness`, `StepDir`) affect the electron trajectories, interaction volume, Auger generation sites, and electron escape paths. This is crucial for quantitative analysis of samples with complex surfaces where topographical shadowing, signal reabsorption, or altered electron scattering can significantly distort the detected signal and limit spatial resolution. ETrace can help predict these effects and guide data interpretation or correction methods.
+*   **Spatial Resolution Studies**: By simulating emission points (`FEmissionPoints`) for a focused beam, one can estimate the effective area on the sample surface from which Auger electrons are collected by the analyzer. This provides insight into the achievable spatial resolution of the AES technique for different sample types and topographies.
+*   **Layer Thickness and Depth Profiling Insights**: Simulate the signal contribution from different depths within a layered sample (`TSimParams.LayerThickness`, `Layer`, `Substrate`) or from features of varying height (`TStep.Height`, `TContactHole.Depth`, `TStripe.Height`). This helps build an understanding of the relationship between signal intensity and depth, which is foundational for quantitative depth profiling using ion sputtering in conjunction with AES.
+*   **Educational Tool**: The ability to visualize electron trajectories (`TrajectoriesChart`) and emission points (`EmissionPointsChart`) provides a powerful educational tool for students and researchers to gain intuitive understanding of the complex physics involved in electron-solid interactions (elastic scattering modeled, inelastic scattering via stopping power, Auger generation) and signal detection in surface analysis.
+*   **Foundation for Method Development**: The modular structure of ETrace allows it to serve as a basis for developing and testing new simulation algorithms, scattering models, or methods for analyzing simulation data. The separation of core simulation logic (`et_sim`, `et_objects`) from the GUI (`et_main`) also suggests the potential for extending the project with a command-line interface for automated simulations or integration into larger computational workflows, although this is not an existing feature based on the provided interfaces.
+
+## How to Use ETrace
+
+Based on the `et_main.pas` unit, the primary way to interact with ETrace is through its graphical user interface (GUI).
+
+1.  **Launch the Application**: Execute the compiled ETrace application executable (refer to the "Building the Project" section for compilation instructions).
+2.  **Set Simulation Parameters**: Use the various controls on the `TMainForm` window to configure the simulation settings. Parameters are logically grouped into sections (E-Gun, Analyzer, Sample) and include details about the electron beam energy and size, analyzer type and acceptance angles, sample material composition (Substrate and Layer), sample geometry type (Topography) and dimensions, tilt angle, and the number of electrons to simulate.
+3.  **Load/Save Parameters**: The GUI includes functionality (via `LoadParamsFromCfg`, `SaveParamsFromCfg`) to load predefined parameter sets from or save the current configuration to the `etracer.cfg` configuration file. Look for corresponding buttons or menu items on the form, likely in a "File" menu or a dedicated panel. This feature is useful for saving frequently used setups and ensuring reproducibility.
+4.  **Run Simulation**: Click the "Run Simulation" button (likely labeled "Run" or "Start Simulation"). This action triggers the `btnRunSimClick` event handler in `TMainForm`, which in turn calls `RunSimulation` to gather parameters (`GUIToParams`), create and configure the `TSimulation` object, connect event handlers, and start the simulation loop (`TSimulation.Execute`).
+5.  **Monitor Progress**: While the simulation is running, the `ProgressBar` on the form will likely indicate the simulation's progress (e.g., showing the percentage of primary electrons processed or the count of completed electrons). The `SummaryMemo` might display real-time updates on the number of detected electrons or other key statistics as reported by the simulation's event handlers.
+6.  **View Results**: Once the simulation is complete or as it progresses (depending on implementation details), results are displayed in dedicated areas of the form, typically managed by the `ResultsPageControl`.
+    *   **Summary**: Check the `pgSummary` tab and the `SummaryMemo` for a text-based summary of the simulation parameters, duration, and key outcomes like the total number of detected electrons or calculated intensities (`TopInt`, `WallInt`, `BotInt` from `et_params.pas` might be presented here).
+    *   **Emission Points**: Navigate to the `pgEmissionPoints` tab. The `EmissionPointsChart` will display a scatter plot showing the (X, Y) or other projected coordinates on the sample surface where detected Auger electrons escaped. The data for this chart is collected in the `FEmissionPoints` array via the `DetectionHandler`. The `EmissionPointsMemo` might list the raw coordinates of these points.
+    *   **Trajectories**: Navigate to the `pgTrajectories` tab. The `TrajectoriesChart` will visualize the paths taken by simulated electrons. The `rgProjection` radio group allows you to select the desired 2D projection (XY, XZ, YZ) or potentially a pseudo-3D view. The number of trajectories plotted might be limited by the value in `seTrajectories`. Trajectory data is collected in the `FTrajectories` array via the `TrajectoryCompleteHandler`.
+    *   **Values**: The `pgValues` tab sheet exists but its content is not detailed in the provided interfaces. It might be intended for displaying raw numerical data from the simulation results in a grid or table, possibly including energy distributions or detailed lists of detected events.
+
+The GUI provides a user-friendly interface to set up complex simulation scenarios, run the simulation, and visually explore the resulting electron behavior and signal generation.
+
+By enabling users to define and simulate interactions within controlled conditions, ETrace provides a valuable tool for forward modeling, experimental design, data interpretation, and fundamental research in electron spectroscopy and microscopy.
+
 ## Core Concepts
 
 The simulation relies on several fundamental data structures and concepts defined primarily in `et_global.pas`, `et_objects.pas`, and `et_sim.pas`.
@@ -95,55 +126,7 @@ The ETrace project is written in Free Pascal and can be compiled using the Free 
 *   **Lazarus Component Library (LCL)**: The GUI (`et_main.pas`) uses the LCL, which is Free Pascal's equivalent to Delphi's VCL. This is typically included with a standard FPC installation or when installing the Lazarus IDE. Ensure your FPC installation includes LCL support for the relevant widgetset for your operating system (e.g., GTK2/QT for Linux, WinAPI for Windows, Cocoa for macOS).
 *   **TAChart Package**: The project uses the TAChart library for plotting and charting functionalities. This is a widely used charting package for Free Pascal and Lazarus. It is usually available through Lazarus IDE installation or can be installed separately for FPC. Ensure the TAChart source files and compiled units are accessible to the compiler. When installing FPC or Lazarus via package managers or official installers, TAChart is often an optional component you need to explicitly select. If compiling from the command line, you may need to add the TAChart unit path using an `-Fu` flag during compilation.
 
-### Command-Line Compilation
-
-1.  **Navigate to the Project Directory**: Open a terminal or command prompt and change your current directory to the root of the ETrace project source code, where `et_main.pas` and the `src` and `unit_tests` folders are located.
-2.  **Run the FPC Compiler**: Execute the `fpc` command followed by the main source file name. You must specify the path to the main application file, and potentially provide paths to the required units and libraries (`LCL`, `TAChart`) if they are not in the default FPC search paths. Assuming the source units are in a subdirectory like `src` relative to `et_main.pas`, FPC can usually find them if the project structure is standard and `et_main.pas` is in the project root.
-
-    A basic compilation command, assuming `et_main.pas` is in the current directory and `et_global.pas`, `et_math.pas`, `et_objects.pas`, `et_params.pas`, `et_sim.pas` are in a `src` subdirectory and LCL/TAChart are in FPC's default paths, might look like this:
-
-    ```bash
-    fpc et_main.pas
-    ```
-
-    If your source units are in a subdirectory (like `src`) that isn't automatically searched, or if your LCL/TAChart units are in non-standard locations, you will need to specify unit search paths using the `-Fu` option. The `-Fu` option specifies a directory where the compiler should look for `.pas` (interface) and `.ppu` (compiled unit) files.
-
-    For example, if all project units are in `./src/` and LCL/TAChart units are in FPC's standard library path:
-
-    ```bash
-    fpc -Fu./src/ et_main.pas
-    ```
-
-    If LCL units are in `/usr/lib/fpc/*/lcl/units/*/` and TAChart units are in `/usr/lib/fpc/*/packages/tachart/units/*/` (replace `*` with your FPC version and architecture, e.g., `3.2.2/x86_64-linux`), you might need:
-
-    ```bash
-    fpc -Fu./src/ -Fu/usr/lib/fpc/*/lcl/units/*/ -Fu/usr/lib/fpc/*/packages/tachart/units/*/ et_main.pas
-    ```
-    (The exact paths depend heavily on your OS and FPC installation method).
-
-    To compile the unit tests separately (e.g., `etmathtests.pas`), you would navigate to the `unit_tests` directory and compile them, ensuring the compiler can find the project units in `../src/` and the FPCUnit library.
-
-    ```bash
-    cd unit_tests
-    fpc -Fu../src/ etmathtests.pas
-    fpc -Fu../src/ etsampletests.pas
-    ```
-    Running the compiled test executables (e.g., `./etmathtests`) will execute the tests.
-
-3.  **Check for Errors**: The compiler will output messages indicating the progress and outcome. If there are compilation errors (syntax errors, missing files, missing units, linking problems), FPC will stop and list them with file names and line numbers. You must fix all errors in the source code or compiler options before compilation can complete successfully.
-4.  **Run the Executable**: Upon successful compilation of `et_main.pas`, FPC will generate an executable file in the same directory. The name of the executable will typically be `et_main` (on Linux/macOS) or `et_main.exe` (on Windows). You can run the application from the terminal or file explorer:
-
-    ```bash
-    ./et_main
-    ```
-    or
-    ```cmd
-    et_main.exe
-    ```
-
-This command-line process compiles the main program file and all the units it directly or indirectly uses, including LCL and TAChart units if configured correctly, producing a single executable file.
-
-### Building with Lazarus IDE (Optional)
+### Building with Lazarus IDE
 
 While command-line compilation is feasible, Free Pascal projects with GUIs built using LCL are typically developed and managed using the Lazarus IDE. Lazarus simplifies the build process significantly by providing a visual form designer, integrated debugger, and automated handling of unit paths and required packages (like LCL and TAChart) linked to the project.
 
@@ -252,37 +235,6 @@ This unit contains the definition of the main application window, `TMainForm`, w
             *   `TrajectoryCompleteHandler(Simulation, const AElectronID, const ATrajectory)`: Called by `TSimulation` after tracing the complete path of a primary or secondary electron. It receives a unique identifier for the electron and the `TTrajectory` data (an array of `TTrajectoryPoint`). This method stores the completed trajectory data in the `FTrajectories` array for subsequent visualization on the `TrajectoriesChart`.
 
 In summary, `et_main.pas` is the primary interface unit. It provides the visual controls for setting parameters, implements the logic to initiate and monitor simulations using the `TSimulation` class, and handles the display of results via charts and text memos, utilizing event handlers to receive updates from the simulation engine.
-
-## How to Use ETrace
-
-Based on the `et_main.pas` unit, the primary way to interact with ETrace is through its graphical user interface (GUI).
-
-1.  **Launch the Application**: Execute the compiled ETrace application executable (refer to the "Building the Project" section for compilation instructions).
-2.  **Set Simulation Parameters**: Use the various controls on the `TMainForm` window to configure the simulation settings. Parameters are logically grouped into sections (E-Gun, Analyzer, Sample) and include details about the electron beam energy and size, analyzer type and acceptance angles, sample material composition (Substrate and Layer), sample geometry type (Topography) and dimensions, tilt angle, and the number of electrons to simulate.
-3.  **Load/Save Parameters**: The GUI includes functionality (via `LoadParamsFromCfg`, `SaveParamsFromCfg`) to load predefined parameter sets from or save the current configuration to the `etracer.cfg` configuration file. Look for corresponding buttons or menu items on the form, likely in a "File" menu or a dedicated panel. This feature is useful for saving frequently used setups and ensuring reproducibility.
-4.  **Run Simulation**: Click the "Run Simulation" button (likely labeled "Run" or "Start Simulation"). This action triggers the `btnRunSimClick` event handler in `TMainForm`, which in turn calls `RunSimulation` to gather parameters (`GUIToParams`), create and configure the `TSimulation` object, connect event handlers, and start the simulation loop (`TSimulation.Execute`).
-5.  **Monitor Progress**: While the simulation is running, the `ProgressBar` on the form will likely indicate the simulation's progress (e.g., showing the percentage of primary electrons processed or the count of completed electrons). The `SummaryMemo` might display real-time updates on the number of detected electrons or other key statistics as reported by the simulation's event handlers.
-6.  **View Results**: Once the simulation is complete or as it progresses (depending on implementation details), results are displayed in dedicated areas of the form, typically managed by the `ResultsPageControl`.
-    *   **Summary**: Check the `pgSummary` tab and the `SummaryMemo` for a text-based summary of the simulation parameters, duration, and key outcomes like the total number of detected electrons or calculated intensities (`TopInt`, `WallInt`, `BotInt` from `et_params.pas` might be presented here).
-    *   **Emission Points**: Navigate to the `pgEmissionPoints` tab. The `EmissionPointsChart` will display a scatter plot showing the (X, Y) or other projected coordinates on the sample surface where detected Auger electrons escaped. The data for this chart is collected in the `FEmissionPoints` array via the `DetectionHandler`. The `EmissionPointsMemo` might list the raw coordinates of these points.
-    *   **Trajectories**: Navigate to the `pgTrajectories` tab. The `TrajectoriesChart` will visualize the paths taken by simulated electrons. The `rgProjection` radio group allows you to select the desired 2D projection (XY, XZ, YZ) or potentially a pseudo-3D view. The number of trajectories plotted might be limited by the value in `seTrajectories`. Trajectory data is collected in the `FTrajectories` array via the `TrajectoryCompleteHandler`.
-    *   **Values**: The `pgValues` tab sheet exists but its content is not detailed in the provided interfaces. It might be intended for displaying raw numerical data from the simulation results in a grid or table, possibly including energy distributions or detailed lists of detected events.
-
-The GUI provides a user-friendly interface to set up complex simulation scenarios, run the simulation, and visually explore the resulting electron behavior and signal generation.
-
-## Real-World Applications and Problem Solving
-
-ETrace, as a simulation tool for electron-sample interactions and Auger electron emission, can be applied to various practical problems in materials science, surface physics, and analytical microscopy. It provides a virtual laboratory for investigating phenomena relevant to techniques like Auger Electron Spectroscopy (AES) and Scanning Electron Microscopy (SEM).
-
-*   **Understanding and Interpreting AES Spectra**: Simulate electron trajectories, energy loss, scattering events, Auger generation, and escape from specific material compositions and structures. This helps in understanding how the detected Auger signal intensity and shape are influenced by fundamental processes. Comparing simulated results with experimental AES spectra can aid in deconvoluting complex spectra or identifying contributions from different depths or sample regions.
-*   **Optimizing Experimental Parameters**: Investigate the effect of changing electron beam parameters (e.g., primary energy using `TSimParams.PrimaryEnergy`, beam diameter using `TSimParams.BeamDiameter`) or analyzer geometry (e.g., polar/azimuthal angles via analyzer configuration, sector angles using `TSimParams.SectorStart`/`SectorEnd`) on the detected Auger signal for a given sample. This allows researchers to optimize their experimental setup for maximum signal-to-noise ratio, sensitivity to specific elements, or enhanced spatial resolution.
-*   **Analyzing Topographical Effects on Signal and Resolution**: Study how non-flat surface topographies (simulated using `TContactHole`, `TStripe`, `TStep` classes and `TSimParams.Topography`, `Width`, `Depth`, `LayerThickness`, `StepDir`) affect the electron trajectories, interaction volume, Auger generation sites, and electron escape paths. This is crucial for quantitative analysis of samples with complex surfaces where topographical shadowing, signal reabsorption, or altered electron scattering can significantly distort the detected signal and limit spatial resolution. ETrace can help predict these effects and guide data interpretation or correction methods.
-*   **Spatial Resolution Studies**: By simulating emission points (`FEmissionPoints`) for a focused beam, one can estimate the effective area on the sample surface from which Auger electrons are collected by the analyzer. This provides insight into the achievable spatial resolution of the AES technique for different sample types and topographies.
-*   **Layer Thickness and Depth Profiling Insights**: Simulate the signal contribution from different depths within a layered sample (`TSimParams.LayerThickness`, `Layer`, `Substrate`) or from features of varying height (`TStep.Height`, `TContactHole.Depth`, `TStripe.Height`). This helps build an understanding of the relationship between signal intensity and depth, which is foundational for quantitative depth profiling using ion sputtering in conjunction with AES.
-*   **Educational Tool**: The ability to visualize electron trajectories (`TrajectoriesChart`) and emission points (`EmissionPointsChart`) provides a powerful educational tool for students and researchers to gain intuitive understanding of the complex physics involved in electron-solid interactions (elastic scattering modeled, inelastic scattering via stopping power, Auger generation) and signal detection in surface analysis.
-*   **Foundation for Method Development**: The modular structure of ETrace allows it to serve as a basis for developing and testing new simulation algorithms, scattering models, or methods for analyzing simulation data. The separation of core simulation logic (`et_sim`, `et_objects`) from the GUI (`et_main`) also suggests the potential for extending the project with a command-line interface for automated simulations or integration into larger computational workflows, although this is not an existing feature based on the provided interfaces.
-
-By enabling users to define and simulate interactions within controlled conditions, ETrace provides a valuable tool for forward modeling, experimental design, data interpretation, and fundamental research in electron spectroscopy and microscopy.
 
 ## Unit Tests
 

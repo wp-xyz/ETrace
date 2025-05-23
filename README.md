@@ -1,270 +1,304 @@
-# ETrace
-
+# ETrace - Electron Tracer
 ![grafik](https://github.com/wp-xyz/ETrace/assets/30792460/04a6d097-3d41-467a-aa41-2d77e5c86cc9)
+
+ETrace is a simulation project developed using Free Pascal and Lazarus, designed to trace electron trajectories and simulate Auger electron emission from various sample geometries.
 
 ## Project Overview
 
-ETrace is a Free Pascal project designed for simulating electron trajectories and calculating Auger electron intensity from various sample geometries under electron beam irradiation. It is intended for researchers and developers interested in electron microscopy and surface analysis techniques like Auger Electron Spectroscopy (AES).
+This section provides a high-level description of the ETrace project, its purpose, and its main components.
 
-The project provides a framework for defining electron sources, sample geometries (including simple flat surfaces, contact holes, stripes, and steps), and electron analyzers. It traces individual primary and scattered electron trajectories, simulates Auger electron generation, and calculates the detected signal.
+ETrace is a simulation software built with Free Pascal and Lazarus. Its primary objective is to model and visualize the interaction of primary electrons with various material samples, specifically focusing on the generation and emission of Auger electrons. The simulation employs Monte Carlo methods to trace the trajectories of electrons within the material, accounting for scattering and energy loss processes.
 
-## Real-World Applications and Problem Solving
+The project provides a graphical user interface (GUI) that allows users to:
+- Configure the parameters of the electron gun (energy, beam diameter, focus).
+- Define the characteristics and geometry of the sample, including substrate and layer materials, layer thickness, and topography (contact hole, stripe, step).
+- Specify the type and acceptance criteria of the electron analyzer.
+- Run simulations based on the defined parameters.
+- Visualize the results, such as the emission points of Auger electrons and selected electron trajectories.
+- View a summary of the simulation results, including total and spatially resolved Auger intensities.
 
-ETrace, as a simulation tool for electron-sample interactions and Auger electron emission, can be applied to various practical problems in materials science, surface physics, and analytical microscopy. It provides a virtual laboratory for investigating phenomena relevant to techniques like Auger Electron Spectroscopy (AES) and Scanning Electron Microscopy (SEM).
+The core simulation logic is implemented in Pascal units, while the GUI is built using the Lazarus Component Library (LCL), as seen in `etracer.lpr` and `src/et_main.pas`. The `.lfm` file (`src/et_main.lfm`) describes the layout and properties of the GUI elements.
 
-*   **Understanding and Interpreting AES Spectra**: Simulate electron trajectories, energy loss, scattering events, Auger generation, and escape from specific material compositions and structures. This helps in understanding how the detected Auger signal intensity and shape are influenced by fundamental processes. Comparing simulated results with experimental AES spectra can aid in deconvoluting complex spectra or identifying contributions from different depths or sample regions.
-*   **Optimizing Experimental Parameters**: Investigate the effect of changing electron beam parameters (e.g., primary energy using `TSimParams.PrimaryEnergy`, beam diameter using `TSimParams.BeamDiameter`) or analyzer geometry (e.g., polar/azimuthal angles via analyzer configuration, sector angles using `TSimParams.SectorStart`/`SectorEnd`) on the detected Auger signal for a given sample. This allows researchers to optimize their experimental setup for maximum signal-to-noise ratio, sensitivity to specific elements, or enhanced spatial resolution.
-*   **Analyzing Topographical Effects on Signal and Resolution**: Study how non-flat surface topographies (simulated using `TContactHole`, `TStripe`, `TStep` classes and `TSimParams.Topography`, `Width`, `Depth`, `LayerThickness`, `StepDir`) affect the electron trajectories, interaction volume, Auger generation sites, and electron escape paths. This is crucial for quantitative analysis of samples with complex surfaces where topographical shadowing, signal reabsorption, or altered electron scattering can significantly distort the detected signal and limit spatial resolution. ETrace can help predict these effects and guide data interpretation or correction methods.
-*   **Spatial Resolution Studies**: By simulating emission points (`FEmissionPoints`) for a focused beam, one can estimate the effective area on the sample surface from which Auger electrons are collected by the analyzer. This provides insight into the achievable spatial resolution of the AES technique for different sample types and topographies.
-*   **Layer Thickness and Depth Profiling Insights**: Simulate the signal contribution from different depths within a layered sample (`TSimParams.LayerThickness`, `Layer`, `Substrate`) or from features of varying height (`TStep.Height`, `TContactHole.Depth`, `TStripe.Height`). This helps build an understanding of the relationship between signal intensity and depth, which is foundational for quantitative depth profiling using ion sputtering in conjunction with AES.
-*   **Educational Tool**: The ability to visualize electron trajectories (`TrajectoriesChart`) and emission points (`EmissionPointsChart`) provides a powerful educational tool for students and researchers to gain intuitive understanding of the complex physics involved in electron-solid interactions (elastic scattering modeled, inelastic scattering via stopping power, Auger generation) and signal detection in surface analysis.
-*   **Foundation for Method Development**: The modular structure of ETrace allows it to serve as a basis for developing and testing new simulation algorithms, scattering models, or methods for analyzing simulation data. The separation of core simulation logic (`et_sim`, `et_objects`) from the GUI (`et_main`) also suggests the potential for extending the project with a command-line interface for automated simulations or integration into larger computational workflows, although this is not an existing feature based on the provided interfaces.
+## Coordinate System
 
-## How to Use ETrace
+Understanding the coordinate system is essential for setting up simulations accurately and interpreting the resulting data, particularly the positions of emission points and trajectories.
 
-Based on the `et_main.pas` unit, the primary way to interact with ETrace is through its graphical user interface (GUI).
+ETrace uses a standard **right-handed 3D Cartesian coordinate system** (X, Y, Z). The orientation of the axes and the location of the origin are consistently applied across all calculations and visualizations, primarily defined relative to the sample surface.
 
-1.  **Launch the Application**: Execute the compiled ETrace application executable (refer to the "Building the Project" section for compilation instructions).
-2.  **Set Simulation Parameters**: Use the various controls on the `TMainForm` window to configure the simulation settings. Parameters are logically grouped into sections (E-Gun, Analyzer, Sample) and include details about the electron beam energy and size, analyzer type and acceptance angles, sample material composition (Substrate and Layer), sample geometry type (Topography) and dimensions, tilt angle, and the number of electrons to simulate.
-3.  **Load/Save Parameters**: The GUI includes functionality (via `LoadParamsFromCfg`, `SaveParamsFromCfg`) to load predefined parameter sets from or save the current configuration to the `etracer.cfg` configuration file. Look for corresponding buttons or menu items on the form, likely in a "File" menu or a dedicated panel. This feature is useful for saving frequently used setups and ensuring reproducibility.
-4.  **Run Simulation**: Click the "Run Simulation" button (likely labeled "Run" or "Start Simulation"). This action triggers the `btnRunSimClick` event handler in `TMainForm`, which in turn calls `RunSimulation` to gather parameters (`GUIToParams`), create and configure the `TSimulation` object, connect event handlers, and start the simulation loop (`TSimulation.Execute`).
-5.  **Monitor Progress**: While the simulation is running, the `ProgressBar` on the form will likely indicate the simulation's progress (e.g., showing the percentage of primary electrons processed or the count of completed electrons). The `SummaryMemo` might display real-time updates on the number of detected electrons or other key statistics as reported by the simulation's event handlers.
-6.  **View Results**: Once the simulation is complete or as it progresses (depending on implementation details), results are displayed in dedicated areas of the form, typically managed by the `ResultsPageControl`.
-    *   **Summary**: Check the `pgSummary` tab and the `SummaryMemo` for a text-based summary of the simulation parameters, duration, and key outcomes like the total number of detected electrons or calculated intensities (`TopInt`, `WallInt`, `BotInt` from `et_params.pas` might be presented here).
-    *   **Emission Points**: Navigate to the `pgEmissionPoints` tab. The `EmissionPointsChart` will display a scatter plot showing the (X, Y) or other projected coordinates on the sample surface where detected Auger electrons escaped. The data for this chart is collected in the `FEmissionPoints` array via the `DetectionHandler`. The `EmissionPointsMemo` might list the raw coordinates of these points.
-    *   **Trajectories**: Navigate to the `pgTrajectories` tab. The `TrajectoriesChart` will visualize the paths taken by simulated electrons. The `rgProjection` radio group allows you to select the desired 2D projection (XY, XZ, YZ) or potentially a pseudo-3D view. The number of trajectories plotted might be limited by the value in `seTrajectories`. Trajectory data is collected in the `FTrajectories` array via the `TrajectoryCompleteHandler`.
-    *   **Values**: The `pgValues` tab sheet exists but its content is not detailed in the provided interfaces. It might be intended for displaying raw numerical data from the simulation results in a grid or table, possibly including energy distributions or detailed lists of detected events.
+*   **Z-axis**: The positive Z-axis always points **upwards**, perpendicular to the primary sample surface (the "top" surface for flat or structured samples). This axis represents the sample normal. Negative Z values extend downwards into the sample bulk. The global variable `SimParams.zAxis` is explicitly set to (0.0, 0.0, 1.0) representing this upward direction.
 
-The GUI provides a user-friendly interface to set up complex simulation scenarios, run the simulation, and visually explore the resulting electron behavior and signal generation.
+*   **X-axis and Y-axis**: These axes define the plane of the primary sample surface (the XY-plane). The orientation of the X and Y axes within this plane depends slightly on the chosen sample topography, but they always form a right-handed system with the Z-axis.
+    - For **flat samples** (implicitly handled as a special case or ttNone/default plane), the XY plane is the surface.
+    - For **Contact Hole** (`ttContactHole`): The origin (0,0,0) is typically at the center of the contact hole opening on the top surface (Z=0). The X and Y axes define the lateral extent of this surface. The contact hole extends downwards (negative Z) to the defined `Depth`.
+    - For **Stripe** (`ttStripe`): The origin (0,0,0) is typically at the center of the stripe on the top surface (Z=0). The stripe runs along the **Y-axis**. Its width is defined along the X-axis, centered at X=0. The stripe's height extends downwards (negative Z) to the defined `Height`.
+    - For **Step** (`ttStep`): The origin (0,0,0) is typically located at the step edge on the top level (Z=0). The step edge runs along the **Y-axis**. The X-axis is perpendicular to the edge, defining the transition direction. Depending on the `StepDir` (`sdUp` or `sdDown`), either the region with X > 0 or X < 0 will be at a lower Z coordinate (the `Height` value, which is negative).
 
-By enabling users to define and simulate interactions within controlled conditions, ETrace provides a valuable tool for forward modeling, experimental design, data interpretation, and fundamental research in electron spectroscopy and microscopy.
+*   **Origin (0,0,0)**: As described above, the origin is typically located on the primary sample surface (Z=0) and serves as a reference point, often coinciding with a key feature like the center of a hole/stripe or the edge of a step.
 
-## Core Concepts
+**Relation to Beam and Analyzer Orientation:**
 
-The simulation relies on several fundamental data structures and concepts defined primarily in `et_global.pas`, `et_objects.pas`, and `et_sim.pas`.
+*   **Electron Beam**: The primary electron beam is generated by the `TElectronSource`. Its initial direction is defined by a `TiltAngle` relative to the positive Z-axis (sample normal). An azimuthal angle is also implicitly defined during creation (hardcoded to 0.0, meaning the beam is initially in the XZ-plane, incident from the X>0 side if TiltAngle > 0). The beam is focused towards a specified `Focus` point (`TSimParams.Focus`), given in the sample's (X,Y,Z) coordinate system.
+*   **Analyzer**: The electron analyzer's acceptance axis is defined by a `PolarAngle` relative to the positive Z-axis and an `AzimuthAngle` relative to the positive X-axis in the XY-plane. These angles determine the direction from which emitted electrons are collected.
 
-### Global Definitions (`et_global.pas`)
+All coordinates used for emission points (`FEmissionPoints`), trajectories (`FTrajectories`), and sample dimensions (`Width`, `Depth`, `LayerThickness`) are specified and calculated within this consistent (X, Y, Z) framework. The visualization charts (`EmissionPointsChart`, `TrajectoriesChart`) also use these coordinates, with selectable 2D projections (XY, XZ, YZ) allowing different views of the 3D space.
 
-This unit defines global types, constants, and variables used throughout the project.
+## Core Concepts and Data Structures
 
-*   **`Float`**: An alias for `double`, used for floating-point calculations.
-*   **`TVector3`**: Represents a 3D vector with `X`, `Y`, and `Z` components. Used for positions, directions, etc.
-    ```pascal
-    TVector3 = record
-      X, Y, Z: float;
-    end;
+Understanding the fundamental data types and concepts is crucial for comprehending the simulation logic. This section details the key records and types defined in `et_global.pas` and used throughout the project.
+
+*   **Float**: Defined as `double`. This specifies that floating-point numbers are stored with double precision, important for numerical accuracy in the simulation calculations.
+
+*   **TDataType**: An enumeration (`(dtNone, dtTraj, dtEmPts)`) used to classify different types of simulation data, such as trajectories (`dtTraj`) and emission points (`dtEmPts`).
+
+*   **TTopoType**: An enumeration (`(ttNone, ttContactHole, ttStripe, ttStep)`) representing the different sample topographies supported by the simulation.
+    - `ttContactHole`: Models a contact hole geometry.
+    - `ttStripe`: Models a long stripe or line.
+    - `ttStep`: Models a step-like topography.
+
+*   **TAnalyzerType**: An enumeration (`(atNone, atCMA, atCHA)`) defining the types of electron analyzers that can be simulated.
+    - `atCMA`: Cylindrical Mirror Analyzer.
+    - `atCHA`: Concentric Hemispherical Analyzer.
+
+*   **TNormIntensType**: An enumeration (`(niRaw, niPrimEl, niArea)`) related to intensity normalization methods, although its usage might be limited or specific within the current code. (Based on code analysis, this enum seems unused in the provided units).
+
+*   **TProjection**: An enumeration (`(XYproj, XZproj, YZproj, ThreeD)`) used primarily for selecting the projection plane for visualizing trajectories in the GUI.
+
+*   **TStepDir**: An enumeration (`(sdNone, sdUp, sdDown)`) specifying the direction of a step topography (whether the higher level is 'up' or 'down' relative to the coordinate system, relative to the X-axis position).
+
+*   **TVector3**: A record type representing a 3D vector or point in space with `X`, `Y`, and `Z` components of type `Float`. Used extensively for positions, directions, and other vector quantities.
+
+*   **TRay**: A record combining a starting `Point` (TVector3) and a `Dir`ection (TVector3), used to represent the path of an electron.
+
+*   **TMatrix3**: A record representing a 3x3 matrix, defined as an array of three `TVector3`. While declared, its direct usage in the provided code snippets isn't immediately apparent, suggesting it might be used in other parts of the project or is a leftover.
+
+*   **ExtStr**: A short string type (`String[4]`), possibly used for specific fixed-length identifiers or codes.
+
+*   **Error Codes**: Constants like `etOK`, `etIOError`, `etOutOfMemory`, `etAborted` define a simple error reporting mechanism via the `etError` global variable and `GetError` function.
+
+*   **TSimParams**: A comprehensive record containing all the parameters required to define a simulation run. This includes:
+    - `zAxis`: Defines the orientation of the sample surface normal (hardcoded to (0,0,1)).
+    - Electron source parameters (`PrimaryEnergy`, `BeamDiameter`, `Focus` point in (X,Y,Z), `NumElectrons`).
+    - Electron analyzer parameters (`AnalyzerType`, `SectorStart`, `SectorEnd`, `UseHoeslerAperture`).
+    - Sample parameters (`SubstrateName`, `LayerName`, `Topography`, `Width`, `Depth`, `LayerThickness`, `StepDir`, `OnlyDirect`, `TiltAngle` of the beam).
+    The `DefaultSimParams` constant provides a baseline configuration. This record acts as the central hub for transferring settings from the GUI (`et_main.pas`, `et_main.lfm`) to the simulation engine (`et_sim.pas`).
+
+These data structures provide the foundation for representing the physical system being simulated and managing the simulation state and parameters.
+
+## Simulation Model
+
+The heart of ETrace lies in its simulation engine, primarily implemented in `et_objects.pas` and `et_sim.pas`. It employs a Monte Carlo approach to simulate the complex interactions of electrons with the sample material.
+
+Key aspects of the simulation model include:
+
+1.  **Electron Source (`TElectronSource`)**:
+    - Generates primary electrons with a specified `PrimaryEnergy` (keV) and `BeamDiameter` (µm).
+    - Electrons are focused towards a defined `Focus` point (`TVector3`) on the sample surface, specified in the sample's (X,Y,Z) coordinate system.
+    - The beam can be tilted relative to the sample normal (positive Z-axis) using the `TiltAngle` (degrees). The azimuthal angle of the primary beam is fixed to 0 degrees (in the XZ plane).
+    - The `GenerateElectron` procedure creates individual primary electrons with their initial position (`Ray.Point`) and direction (`Ray.Dir`), incorporating a normal distribution spread (`BeamRadius`) around the `FocusedPoint`.
+
+2.  **Electron-Material Interaction (`TMaterial`)**:
+    - The `TMaterial` class encapsulates the physical properties of different materials (e.g., Si, SiO2, Au) relevant to electron interactions.
+    - It stores fundamental parameters like `AtomicNumber` (Z), `A` (Atomic/Molecular Mass), `MassDensity` (g/cm³), `CoreLevelEnergy` (keV), and `AugerEnergy` (eV). These parameters are loaded from the `TMaterialsList`.
+    - It provides methods based on established physics models to calculate:
+        - `CalcAugerCrossSection(E: float)`: Calculates the ionization cross section for exciting the core level at electron energy `E`, based on the Gryzinski model (Eq. 11 in Ze-jun et al. SIA, 10, 253 (1987)).
+        - `CalcAugerEscapeDepth(E: float)`: Calculates the average distance (in µm) an Auger electron with energy `E` can travel within the material before losing energy or being absorbed, based on the Seah & Dench model.
+        - `CalcStoppingPower(E: float)`: Calculates the rate at which an electron loses energy (dE/dS) as it travels through the material, for energy `E` (keV), using a modified Bethe equation (See Eli Napchan, p9). The result is in keV/µm.
+        - `RutherfordScattParams(E: float, var Sigma, Alpha: Float)`: Calculates the total elastic scattering cross-section (`Sigma` in cm²) and the screening factor (`Alpha`) for energy `E` (keV), based on the Rutherford scattering model with a screening correction (See Eli Napchan, p10). These parameters are used to determine scattering angles and step lengths.
+
+3.  **Sample Geometry and Interaction (`TSample`, `TContactHole`, `TStripe`, `TStep`)**:
+    - The `TSample` is an abstract base class defining the common interface and shared logic for sample objects. It is initialized with substrate and layer materials (`TMaterial`), the primary electron `Energy`, and the `LayerThickness`.
+    - It manages the `Substrate` and `Layer` materials and the layer-substrate `zInterface` position (negative Z relative to the top surface). It changes the active `Material` (`ChangeMaterial`) based on the electron's current Z-coordinate relative to the `zInterface`.
+    - The core interaction logic, specific to the sample's shape, is handled by methods that must be implemented by derived classes:
+        - `OnSurface(Point: TVector3)`: Returns `True` if the given `Point` is on the sample surface, considering the geometrical tolerance `FloatEps`.
+        - `Outside(Point: TVector3)`: Returns `True` if the given `Point` is outside the sample volume.
+        - `Intersection(Ray: TRay, var Point: TVector3, FromOutside: Boolean)`: Calculates the intersection point (`Point`) of an electron `Ray` with the sample surface. It returns `True` if an intersection exists in the positive ray direction. The `FromOutside` parameter indicates whether the ray is approaching the surface from outside the sample volume.
+        - `SurfNormal(Point: TVector3, var Normal: TVector3)`: Calculates the surface normal vector (`Normal`) at a given `Point` on the surface.
+    - **Derived Classes**: `TContactHole`, `TStripe`, and `TStep` provide concrete implementations of the `TSample` interface for specific geometries, defining their shapes and implementing the intersection and surface normal logic based on planes and cylinders. Dimensions like `Radius`, `Depth`, `Width`, `Height`, and `StepDir` are stored and used here.
+    - `EmitAugerEl(Point: TVector3, E: float, var Electron: TAugerElectron)`: Simulated Auger electron emission occurs when a primary or scattered electron arrives at a surface `Point` with sufficient energy (`E >= Material.CoreLevelEnergy`). The emission direction (`Electron.Ray.Dir`) is randomized isotropically into the upper hemisphere defined by the surface normal. The contribution of the emitted Auger electron to the overall intensity in the detector (`Electron.Weight`) depends on the material's ionization cross-section, escape depth, emission angle relative to the surface normal, and a normalization factor (`Intensfact`). `GenByBkScEl` flag indicates if the Auger electron was generated by a backscattered electron (i.e., energy E is less than the initial PrimaryEnergy).
+    - `Scatter(var Electron: TElectron, var E: float)`: Implements the Monte Carlo step for electron elastic scattering. Based on the current electron `Energy` and the `Material` properties (`RutherfordScattParams`, `StoppingPowerParam`), it calculates a new direction and energy after traveling a simulated step distance (`step`). The step length is determined probabilistically based on the total scattering cross-section. Energy loss is calculated based on the step length and stopping power. The scattering angle distribution is based on the screened Rutherford model.
+
+4.  **Electron Trajectory Calculation (`TSimulation.CalcTrajectory`)**:
+    - This procedure traces the path of a single electron (primary or scattered) step-by-step within the sample using the `FSample.Scatter` method.
+    - At each step, it checks if the electron has crossed the layer-substrate interface (`zIntf`) and updates the active `Material` accordingly.
+    - It checks for intersections with the sample boundary (`FSample.Outside`) and records the exit point if the electron leaves the sample (`ExitsSample`).
+    - If the electron is on the surface (`FSample.OnSurface`) and has sufficient energy (`E >= Material.CoreLevelEnergy`), it triggers the `EmitAugerEl` process.
+    - The trajectory points (position `TVector3` and `Energy`) are stored in a `TTrajectory` array if `OnTrajectoryComplete` is assigned.
+    - The tracing continues until the electron's energy drops below a minimum threshold (`EMin`, typically related to the CoreLevelEnergy) or it leaves the sample (`ExitsSample`). If it exits, `TraceElectron` may call `CalcTrajectory` again for the backscattered electron's trajectory.
+
+5.  **Analyzer (`TAnalyzer`)**:
+    - Represents the electron analyzer used to detect Auger electrons emitted from the sample.
+    - Configured by `AnalyzerType` (`atCMA` or `atCHA`) and its orientation (`PolarAngle`, `AzimuthAngle` in degrees) relative to the sample's coordinate system.
+    - The `Detect(var Electron: TAugerElectron)` method checks if an emitted Auger electron's trajectory (`Electron.Ray.Dir`) falls within the analyzer's defined angular acceptance range. This range is defined by `FAcc1` and `FAcc2` (cosine values of the polar acceptance angles).
+    - Optional features like the `UseHoeslerAp` (rejecting electrons emitted at angles less than 80 degrees from the sample normal) and `Restrict`ed azimuthal acceptance (`ASectorFrom`, `ASectorTo` in degrees) can be applied.
+    - It accumulates the total `Detected` count and the sum of detected electron `Intensity` (weights).
+
+The `TSimulation` class orchestrates the entire process. Its `Execute(AMaxPrimElectrons: Integer)` method generates `AMaxPrimElectrons` primary electrons from the `FElectronSource` and calls `TraceElectron` for each. `TraceElectron` manages the primary electron's initial interaction and calls `CalcTrajectory`. If a primary electron exits the sample (backscatters), `TraceElectron` may call itself recursively (up to a limit of 10 secondary electron traces) to trace the backscattered electron, allowing for Auger emission generated by backscattered electrons. Event handlers (`OnCancel`, `OnDetection`, `OnTrajectoryComplete`) allow the GUI to receive updates during the simulation. The `SampleHitPoint` property calculates where a primary electron aimed at the `Focus` point would initially intersect the sample surface.
+
+## User Interface and Parameters
+
+The ETrace application provides a graphical user interface (GUI) built with Lazarus (described in `src/et_main.lfm`) to configure and run simulations. The main form (`TMainForm` in `src/et_main.pas`) is organized into several sections within the `ParamsPanel` for parameter input and the `ResultsPageControl` for output visualization.
+
+### Parameters Panel (`ParamsPanel`)
+
+This panel contains group boxes for configuring the simulation settings:
+
+#### Electron Gun Parameters (`gbEGun`)
+
+This group box contains controls related to the primary electron beam:
+
+*   **Primary electron count (`sePrimElCount`)**: A spin edit for specifying the total number of primary electrons to simulate. Corresponds to `TSimParams.NumElectrons`. Maximum value is limited by `MaxInt`.
+*   **Primary energy (keV) (`sePrimEnergy`)**: A float spin edit to set the energy of the primary electron beam in keV. Corresponds to `TSimParams.PrimaryEnergy`. Range is 1 to 100 keV.
+*   **Beam diameter (µm) (`seBeamDiam`)**: A float spin edit for the diameter of the electron beam at the focus point in micrometers. Corresponds to `TSimParams.BeamDiameter`. Range is 0.1 to 10 µm.
+*   **Focus X, Y, Z (µm) (`seFocusX`, `seFocusY`, `seFocusZ`)**: Float spin edits to define the (X, Y, Z) coordinates in micrometers where the electron beam is focused on the sample, relative to the sample's coordinate system origin. Corresponds to `TSimParams.Focus`. Minimum value is 0.1 µm.
+
+#### Analyzer Parameters (`gbAnalyzer`)
+
+This group box controls the settings of the simulated electron analyzer:
+
+*   **Type (`cmbAnalyzerType`)**: A combo box to select the analyzer type: 'CMA' (Cylindrical Mirror Analyzer) or 'CHA' (Concentric Hemispherical Analyzer). Corresponds to `TSimParams.AnalyzerType` (`atCMA` or `atCHA`).
+*   **Annular aperture (`cbAnnularAperture`)**: A checkbox. When checked, it enables the 'from' and 'to' angle inputs for restricting the azimuthal acceptance of the analyzer. Note that azimuthal restriction is only supported for CMA (`atCMA`). This likely influences the use of `TSimParams.SectorStart` and `TSimParams.SectorEnd`.
+*   **from, to (deg) (`seSectorFrom`, `seSectorTo`)**: Float spin edits to define the start and end angles (in degrees) for the annular (azimuthal) aperture range. Only enabled when 'Annular aperture' is checked and the analyzer type is CMA. These correspond to `TSimParams.SectorStart` and `TSimParams.SectorEnd`. Range is 0 to 360 degrees.
+*   **Hösler aperture (> 80 deg) (`cbUseHoeslerAp`)**: A checkbox to enable the Hösler aperture. This restricts detected electrons to those emitted at angles greater than 80 degrees from the positive Z-axis (sample normal). Only applicable for CMA. Corresponds to `TSimParams.UseHoeslerAperture`.
+
+#### Sample Parameters (`gbSample`)
+
+This group box defines the material and geometry of the sample:
+
+*   **Tilt angle (deg) (`seTiltAngle`)**: A float spin edit to set the tilt angle of the sample relative to the electron beam axis (which is initially along +Z in the beam's frame). This angle is measured from the sample's positive Z-axis (normal). Corresponds to `TSimParams.TiltAngle`. Range is -90 to 90 degrees.
+*   **Substrate material (`cmbSubstrate`)**: A combo box listing available substrate materials. The list is populated from the names found in the hardcoded `TMaterialsList` in `et_objects.pas`. Corresponds to `TSimParams.SubstrateName`. Available materials are currently: Al, Si, SiO2, Fe, Au, Cu, Ni, Pt, Ag, Cr, Mo.
+*   **Layer material (`cmbLayer`)**: A combo box listing available layer materials. Also populated from `TMaterialsList`. Corresponds to `TSimParams.LayerName`. Available materials are the same as for the Substrate.
+*   **Layer thickness (µm) (`seLayerThickness`)**: A float spin edit for the thickness of the layer in micrometers, measured downwards from the Z=0 surface. A value of -1 indicates the layer thickness is assumed to be equal to the feature depth/height for topographical samples (`SimParams.LayerThickness := -abs(ALayerThickness)` in `TSample.Create`, then adjusted in derived classes). Corresponds to `TSimParams.LayerThickness`. Minimum value is -1, maximum is 999999 µm.
+*   **Topography (`cmbTopography`)**: A combo box to select the sample geometry: 'Contact hole', 'Stripe', or 'Step'. These options correspond to `ttContactHole`, `ttStripe`, and `ttStep` respectively. Corresponds to `TSimParams.Topography`.
+    - Depending on the selected topography (`cmbTopographyChange` procedure), the labels and enabled state of the 'Depth', 'Width', and 'Direction' controls change to reflect the relevant parameter names for that geometry.
+*   **Depth (µm) (`seDepth`)**: A float spin edit. Represents the depth of the contact hole or the height of the stripe/step in micrometers (always stored as a negative Z value internally in sample classes). Corresponds to `TSimParams.Depth`. Minimum value is -1, maximum is 999999 µm.
+*   **Width (µm) (`seWidth`)**: A float spin edit. Represents the diameter of the contact hole or the width of the stripe in micrometers. This control is disabled for the 'Step' topography. Corresponds to `TSimParams.Width`. Minimum value is -1, maximum is 999999 µm.
+*   **Direction (`sbDirUp`, `sbDirDown`)**: Speed buttons to specify the direction of the step (`sdUp` or `sdDown`). Only enabled for the 'Step' topography. These correspond to `TSimParams.StepDir`.
+
+### Simulation Control
+
+*   **Run simulation (`btnRunSim`)**: A button to start the simulation. When clicked, it reads parameters from the GUI (`GUIToParams`), prepares the simulation (`PrepareSim`), and calls `RunSimulation`. The caption changes to 'Abort' while running (`FRunning` flag), allowing the user to interrupt the simulation by setting `FAborted`.
+*   **ProgressBar (`ProgressBar`)**: Displays the simulation progress based on the number of primary electrons processed (`ASimulation.ElectronSource.NumFired`), visible when the simulation is running. Updated via the `CancelHandler` procedure.
+*   **Trajectory count (`seTrajectories`)**: A spin edit (located in the Trajectories tab) to limit the number of individual electron trajectories that are stored and displayed. The simulation stops recording trajectories once this count is reached (`TrajectoryCompleteHandler`).
+
+The GUI elements are connected to event handlers in `et_main.pas` which manage the flow: reading parameters (`GUIToParams`), initializing and running the simulation (`RunSimulation`), updating control states (`UpdateCtrlState`), handling simulation events (`CancelHandler`, `DetectionHandler`, `TrajectoryCompleteHandler`), and displaying results (`DisplaySummary`, `EmissionPointsSourceGetChartDataItem`, `TrajectoryGetChartDataItemHandler`). User interface settings (window position, active tabs, chart extents) and simulation parameters are saved to and loaded from an INI configuration file (`etracer.ini` and `etracer.cfg` respectively) using `ReadIni`/`WriteIni` and `LoadParamsFromCfg`/`SaveParamsToCfg`.
+
+## Simulation Results and Visualization
+
+After a simulation run completes, the results are displayed in the `ResultsPageControl` area of the main form (`et_main.lfm`). This control has several tabs:
+
+### Summary (`pgSummary`)
+
+*   **Summary Memo (`SummaryMemo`)**: This memo displays a textual summary of the simulation parameters used and the key results.
+    - Parameters listed include details about the electron source (energy, beam diameter, focus, incident angle - derived from `TiltAngle`), the analyzer (type, restricted acceptance, Hösler aperture), and the sample (materials, topography, dimensions, tilt angle - which is the same as the beam incident angle).
+    - Results presented include the total number of primary electrons fired, the total number of detected Auger electrons, the total detected intensity (sum of electron weights), and the intensity contributions from different surface regions (top, bottom, sidewall), where applicable based on topography. This intensity breakdown is calculated by the `EvalIntensities` procedure in `et_main.pas` based on the emission point coordinates and the sample geometry defined by the `SimParams`.
+    - The `DisplaySummary` procedure in `et_main.pas` is responsible for formatting and populating the content of this memo.
+
+### Emission Points (`pgEmissionPoints`)
+
+This tab visualizes and lists the surface points from which Auger electrons were emitted and detected by the analyzer. It has two sub-tabs:
+
+*   **Plot (`pgPlot`)**:
+    - **Emission Points Chart (`EmissionPointsChart`)**: A 2D chart displaying the (X, Y) coordinates of the detected Auger electron emission points on the sample surface. The X and Y axes represent the lateral dimensions in micrometers, consistent with the sample coordinate system.
+    - **Emission Points Series (`EmissionPointsSeries`)**: A scatter series (`TLineSeries` with `LineType = ltNone` and visible circular pointers) used to draw the individual emission points on the chart. Each point represents the (X, Y) coordinate of a detected Auger electron's emission location.
+    - **Emission Points Source (`EmissionPointsSource`)**: A `TUserDefinedChartSource` which provides the data (X, Y coordinates) for the `EmissionPointsSeries` by calling the `EmissionPointsSourceGetChartDataItem` procedure in `et_main.pas`. This procedure retrieves the X and Y coordinates from the `FEmissionPoints` array, which stores `TVector3` points.
+    - **Horizontal Extent Spin Edits (`seEmissionPointsHorMin`, `seEmissionPointsHorMax`)**: Float spin edits that allow the user to control the visible range of the X-axis on the Emission Points Chart. The chart's Y-axis range is adjusted proportionally (`Proportional = True`) to maintain the aspect ratio, assuming X and Y scales are equal. The `EmissionPointsChartExtentChange` procedure handles updates to the chart's `Extent`.
+    - The simulation collects all detected Auger electron emission points in the `FEmissionPoints` array (`DetectionHandler` in `et_main.pas`).
+
+*   **Values (`pgValues`)**:
+    - **Emission Points Memo (`EmissionPointsMemo`)**: A memo displaying the raw data for each detected Auger electron, including its sequence number, emission point coordinates (X, Y, Z), and the calculated intensity contributions from different surface regions (Top, Wall, Bottom) based on the `EvalIntensities` function. It also indicates if the electron was generated by a backscattered electron ('X' in the 'BkSc' column) using the `GenByBkScEl` flag. The format is defined by the `TITLE_MASK` and `VALUE_MASK` constants in `et_main.pas`.
+    - The `DetectionHandler` procedure in `et_main.pas` formats and adds each detected electron's data as a new line in this memo.
+
+### Trajectories (`pgTrajectories`)
+
+This tab allows visualization of the paths taken by a limited number of primary and scattered electrons within and around the sample. It includes controls for selecting the view and limiting the number of trajectories.
+
+*   **Trajectory Count (`seTrajectories`)**: A spin edit to set the maximum number of individual electron trajectories to display. The simulation will only record and provide the first `seTrajectories.Value` trajectories that complete their path (either by exiting the sample or dropping below the minimum energy).
+*   **Projection Radio Group (`rgProjection`)**: A radio group to select the 2D projection plane for viewing the 3D trajectories: 'X-Y plane', 'X-Z plane', or 'Y-Z plane'. Corresponds to the `TProjection` enumeration (`XYproj`, `XZproj`, `YZproj`). The `rgProjectionClick` procedure updates the chart axes titles (`TrajectoriesChart.LeftAxis.Title.Caption`, `TrajectoriesChart.BottomAxis.Title.Caption`) according to the selected projection and signals the chart sources to reset and redraw.
+*   **Trajectories Chart (`TrajectoriesChart`)**: A chart where the electron trajectories are drawn.
+    - Each individual trajectory that is recorded by the simulation (`CalcTrajectory` and `TraceElectron`) is added as a separate `TLineSeries` to this chart.
+    - Each series uses a `TUserDefinedChartSource` to retrieve the trajectory points (`TTrajectory`). The `TrajectoryCompleteHandler` event handler in `TSimulation` (if assigned) triggers the creation of these series when a trajectory finishes tracing. The `TrajectoryGetChartDataItemHandler` procedure in `et_main.pas` retrieves the appropriate (X, Y) pair from the `TTrajectoryPoint` array based on the selected `rgProjection`.
+    - The chart's axes titles change based on the selected `rgProjection`.
+    - **Horizontal Extent Spin Edits (`seTrajectoryHorMin`, `seTrajectoryHorMax`)**: Similar to the Emission Points chart, these controls allow adjusting the visible range of the horizontal axis. `TrajectoriesChartExtentChange` handles these updates. The vertical axis is scaled proportionally.
+    - **`TrajectoriesChartAfterDraw`**: This procedure is triggered after the series are drawn. It is used to draw an outline of the sample geometry (contact hole, stripe, or step) and the initial electron beam path (aimed at `FSampleHitPoint`) on top of the trajectories, providing visual context within the selected projection plane. The geometry outline is drawn in red, and the electron beam path (from an arbitrary point outside the sample to the `SampleHitPoint`) in blue.
+
+## Building and Running
+
+The ETrace project is developed using Free Pascal and Lazarus. To build and run the application from source, you need to have these tools installed on your Ubuntu system (or other supported platforms).
+
+1.  **Install Free Pascal and Lazarus**:
+    If you don't have them installed, you can typically install them using your system's package manager:
+    ```bash
+    sudo apt update
+    sudo apt install fpc laz Lazarus
     ```
-*   **`TRay`**: Represents a ray in 3D space with a `Point` (start) and a `Dir` (direction).
-    ```pascal
-    TRay = record
-      Point : TVector3;       { start point of ray }
-      Dir   : TVector3;       { ray direction      }
-    END;
-    ```
-*   **`TSimParams`**: A record holding all configurable parameters for a simulation run. This includes electron source properties (energy, diameter, focus, count), analyzer settings (type, sector, aperture), and sample properties (material, topography, dimensions, tilt).
-    ```pascal
-    TSimParams = record
-      // ... fields for general, electron source, electron analyzer, and sample parameters ...
-    end;
-    ```
-*   **`DefaultSimParams`**: A constant `TSimParams` record providing default values.
-*   **`etError`**: A global integer variable indicating the last encountered error code (`etOK`, `etIOError`, `etOutOfMemory`, `etAborted`).
-*   **`TDataType`, `TTopoType`, `TAnalyzerType`, `TNormIntensType`, `TProjection`, `TStepDir`**: Enumerated types defining various simulation options and classifications.
 
-### Simulation Objects (`et_objects.pas`)
+2.  **Open the Project in Lazarus**:
+    - Launch the Lazarus IDE.
+    - Go to `Project -> Open Project File...`.
+    - Navigate to the directory where you have the ETrace source code and select the main project file, `etracer.lpr`.
 
-This unit defines the classes representing the physical entities involved in the simulation.
+3.  **Configure Project Settings (if necessary)**:
+    - Lazarus should automatically configure the project based on the `.lpr` file.
+    - Ensure the compiler path is correctly set (usually detected automatically).
+    - The project requires the `tachartlazaruspkg` and `lazcontrols` packages. Check the project dependencies in `Project -> Project Options... -> Packages`. If any required package is not installed in your Lazarus environment, you may need to install it via `Package -> Install/Uninstall Packages...`. These packages are usually available through the Lazarus Online Package Manager (OPM) or your distribution's repositories.
+    - The units `et_Main`, `et_Math`, `et_Global`, `et_Objects`, and `et_Sim` should be automatically included as they are in the project's source path or explicitly listed in the `.lpr` file's `uses` clause.
 
-*   **`TElectron`**: Represents a primary or scattered electron. Includes its `Ray` (position and direction) and `Weight` (used for statistical weighting, e.g., in Monte Carlo).
-*   **`TAugerElectron`**: Represents an Auger electron. Similar to `TElectron` but also includes a `GenByBkscEl` flag indicating if it was generated by a backscattered electron.
-*   **`TMaterialParams`**: Stores fundamental properties of a material element or compound (Z, A, Mass Density, Core Level Energy, Auger Energy).
-*   **`TMaterialsList`**: A collection (`TFPObjectList`) of `TMaterialParams`.
-*   **`TMaterial`**: Represents a material used in the simulation, derived from `TMaterialParams` but calculating derived properties needed for scattering and stopping power calculations (e.g., `ElemDensity`, `EscapeDepth`, `IonizationPotential`, `RutherfordParam`, `ScreeningParam`, `StoppingPowerParam`). Includes methods like `CalcAugerCrossSection`, `CalcAugerEscapeDepth`, `CalcStoppingPower`, `RutherfordScattParams`.
-*   **`TElectronSource`**: Represents the electron beam source. Configured with energy, beam diameter, focus point, and axis. Can `GenerateElectron`.
-*   **`TAnalyzer`**: Represents the electron analyzer. Configured with type and angles. Has a `Detect` method to check if an Auger electron enters the analyzer aperture.
-*   **`TSample`**: An abstract base class for sample geometry. It holds references to the `Substrate` and `Layer` materials. Key virtual/abstract methods define the sample shape and interaction:
-    *   `Intersection(Ray, Point, FromOutside)`: Calculates where a ray intersects the sample surface.
-    *   `OnSurface(Point)`: Checks if a point is on the sample surface.
-    *   `Outside(Point)`: Checks if a point is outside the sample volume.
-    *   `SurfNormal(Point, Normal)`: Returns the surface normal vector at a given point.
-    *   `Scatter(Electron, E)`: Simulates electron scattering within the material.
-    *   `EmitAugerEl(Point, E, Electron)`: Simulates Auger electron emission.
-*   **`TContactHole`, `TStripe`, `TStep`**: Concrete implementations of `TSample` for specific predefined geometries. They implement the abstract methods defined in `TSample` according to their shape.
+4.  **Build the Project**:
+    - Go to `Run -> Build` or press `Shift+F9`.
+    - Lazarus will compile the Pascal units and link the executable. Any compilation errors will be shown in the Messages window.
 
-### Simulation Engine (`et_sim.pas`)
+5.  **Run the Application**:
+    - Go to `Run -> Run` or press `F9`.
+    - Lazarus will execute the compiled application.
 
-This unit contains the main simulation logic.
+The executable file (`etracer` on Linux) will be created in the project's main directory or a designated output directory configured in the Project Options.
 
-*   **`TSimulation`**: The core class for running a simulation. It encapsulates the `TElectronSource`, `TSample`, and `TAnalyzer` objects based on the input `TSimParams`.
-    *   `Execute(AMaxPrimElectrons)`: Starts and runs the simulation for a specified number of primary electrons. Returns an integer error code (`etOK` or other `etError` values).
-    *   `CalcTrajectory(...)`: Calculates the trajectory of a single electron step by step, handling scattering events and checking for material boundaries. It processes interactions within the material based on the `TSample.Scatter` and `TSample.EmitAugerEl` methods.
-    *   `TraceElectron(...)`: Manages the simulation of a single primary electron, including generating secondary electrons (like Auger) and tracing their paths.
-    *   Event Properties (`OnCancel`, `OnDetection`, `OnTrajectoryComplete`): These event properties allow external code (specifically the `TMainForm` GUI in `et_main.pas`) to register callback procedures. When the corresponding event occurs within the simulation engine, the registered procedure is called, allowing the GUI to receive asynchronous updates without blocking the user interface. For example, `OnCancel` allows the GUI to signal the simulation to stop, `OnDetection` provides data for each detected Auger electron (handled by `TMainForm.DetectionHandler`), and `OnTrajectoryComplete` provides the trace of an electron's path (handled by `TMainForm.TrajectoryCompleteHandler`). This mechanism is crucial for displaying progress and results in real-time.
+The project also includes unit tests located in the `unit_tests/` directory (`unit_tests/et_tests.lpr`, `unit_tests/etmathtests.pas`, `unit_tests/etsampletests.pas`). These tests are designed to be run using a GUI test runner (`TGuiTestRunner`), likely included with Lazarus or the fpcunit package. You can typically run these tests by opening `unit_tests/et_tests.lpr` in Lazarus and running that project.
 
-## Project Structure and Units
+## Potential Applications
 
-The project is organized into several Pascal units (`.pas` files):
+The ETrace simulation project, while potentially a research or educational tool, can be applied to solve problems in various fields where electron-sample interactions and surface analysis are important. By simulating the physics of electron-sample interactions and Auger electron emission, ETrace can provide valuable insights that complement experimental work.
 
-*   `et_global.pas`: Defines global data types, constants, and variables. (Detailed above)
-*   `et_math.pas`: Provides mathematical functions and vector/ray operations. (Will be detailed in a later section)
-*   `et_objects.pas`: Defines the core simulation objects and material properties. (Detailed above)
-*   `et_params.pas`: Contains functions for reading simulation parameters from a configuration file (`etracer.cfg` or `CALC_ET.CFG`) and some related global variables. (Will be detailed in a later section)
-*   `et_sim.pas`: Implements the main simulation logic and the `TSimulation` class. (Detailed above)
-*   `et_main.pas`: Contains the GUI definition (`TMainForm`) and handles user interaction, parameter loading/saving, running simulations, and displaying results via charts and memos. It acts as the orchestrator using the classes from other units. (Will be detailed in a later section)
-*   `unit_tests/etmathtests.pas`: Unit tests for `et_math.pas`.
-*   `unit_tests/etsampletests.pas`: Unit tests for the `TSample` implementations in `et_objects.pas`.
+Possible applications include:
 
-This documentation will further detail each major component and unit.
+1.  **Auger Electron Spectroscopy (AES) Analysis**:
+    - **Interpreting Spectra from Topographical Samples**: Real-world samples often have complex 3D features (lines, holes, steps, roughness). The intensity of Auger electrons detected from such features is heavily influenced by the local surface orientation relative to the electron beam and the analyzer, as well as by electron scattering within the material. ETrace can simulate the Auger signal from known geometries and material compositions under specific experimental conditions (beam energy, tilt, analyzer type/angle), helping experimentalists understand how topography affects measured intensities and aiding in accurate compositional analysis.
+    - **Quantitative Analysis**: By comparing simulated Auger intensities from different regions of a topographical sample to experimental line scans or maps, it may be possible to perform more accurate quantitative elemental analysis than is possible with models that assume flat surfaces.
+    - **Signal Origin**: Visualizing electron trajectories and emission points helps understand *where* the detected Auger electrons are originating from, which is crucial for interpreting spatial resolution and depth sensitivity in AES measurements on structured samples.
 
-## Building the Project
+2.  **Scanning Electron Microscopy (SEM)**:
+    - **Image Contrast Interpretation**: While ETrace focuses on Auger electrons, the underlying simulation of primary and scattered electron trajectories is relevant to SEM imaging. The yield of backscattered electrons, for instance, contributes significantly to SEM image contrast, especially for compositional and topographical contrast. ETrace's ability to track primary electron paths and identify where they exit the sample could provide insight into backscattering yield variations on different topographies and materials.
+    - **Electron-Beam Induced Effects**: Understanding the penetration depth and scattering volume of the primary electron beam is important for minimizing beam-induced damage or charging in sensitive samples. The trajectory simulations provide a visual representation of the interaction volume.
 
-The ETrace project is written in Free Pascal and can be compiled using the Free Pascal Compiler (`fpc`). The main application with the GUI is defined in `et_main.pas`.
+3.  **Electron Beam Lithography**:
+    - **Proximity Effect**: Electron scattering within the resist layer and backscattering from the substrate are primary causes of the proximity effect in electron beam lithography, where features are overexposed by electrons scattered from adjacent exposed areas. While ETrace's focus is not specifically on energy deposition in resist, the core scattering simulation could potentially be adapted or used to generate scattering kernels that inform proximity effect correction strategies for patterned substrates.
 
-### Prerequisites
+4.  **Materials Science Research**:
+    - **Investigating Surface Sensitivity**: Simulating emission from varying depths and materials can help researchers understand and visualize the surface sensitivity of AES for specific material systems and electron energies.
+    - **Novel Materials and Structures**: ETrace provides a flexible platform to investigate electron interactions with new materials (once their relevant parameters are added to the `TMaterialsList`) or complex layered/structured systems.
 
-*   **Free Pascal Compiler (FPC)**: You need `fpc` installed on your system. You can download it from the official Free Pascal website (https://www.freepascal.org/) or install it via your operating system's package manager (e.g., `sudo apt-get install fpc` on Ubuntu, `brew install fpc` on macOS via Homebrew, install from package managers on other systems).
-*   **Lazarus Component Library (LCL)**: The GUI (`et_main.pas`) uses the LCL, which is Free Pascal's equivalent to Delphi's VCL. This is typically included with a standard FPC installation or when installing the Lazarus IDE. Ensure your FPC installation includes LCL support for the relevant widgetset for your operating system (e.g., GTK2/QT for Linux, WinAPI for Windows, Cocoa for macOS).
-*   **TAChart Package**: The project uses the TAChart library for plotting and charting functionalities. This is a widely used charting package for Free Pascal and Lazarus. It is usually available through Lazarus IDE installation or can be installed separately for FPC. Ensure the TAChart source files and compiled units are accessible to the compiler. When installing FPC or Lazarus via package managers or official installers, TAChart is often an optional component you need to explicitly select. If compiling from the command line, you may need to add the TAChart unit path using an `-Fu` flag during compilation.
+5.  **Education and Training**:
+    - **Visualization Tool**: The trajectory visualization is a powerful educational tool for demonstrating the principles of electron scattering (elastic and inelastic), energy loss, interaction volume, and the origin of Auger electrons in solids. It can help students grasp complex concepts in surface science, materials analysis, and electron microscopy.
 
-### Building with Lazarus IDE
+By providing a computational model of electron-sample interactions, ETrace enables predictive simulations that can guide experimental design, aid in data interpretation, and deepen the understanding of fundamental electron-solid physics relevant to various scientific and technological fields.
 
-While command-line compilation is feasible, Free Pascal projects with GUIs built using LCL are typically developed and managed using the Lazarus IDE. Lazarus simplifies the build process significantly by providing a visual form designer, integrated debugger, and automated handling of unit paths and required packages (like LCL and TAChart) linked to the project.
+## Source Code Structure
 
-1.  **Open Project**: If a Lazarus project file (`.lpr` for the main program, `.lpi` for the project information) exists for ETrace (these were not provided in the interfaces, but are standard for Lazarus projects), open it using the Lazarus IDE's "Project" -> "Open Project..." menu option.
-2.  **Configure Project**: If no project file exists, you might need to create a new "Application" project in Lazarus and add the existing `.pas` files (`et_main.pas`, and potentially adding the `src` and `unit_tests` directories to the project's search paths in the project options). Ensure the required packages (LCL, TAChart) are added to the project dependencies (Project -> Project Options -> Packages).
-3.  **Build**: Use the "Run" -> "Build All" or "Run" -> "Compile" menu option in Lazarus. The IDE will invoke the FPC compiler with all the necessary options derived from the project configuration.
-4.  **Run**: Use the "Run" -> "Run" option (usually F9) to compile the project (if necessary) and launch the application directly from within the IDE. This is convenient for testing and debugging.
+The ETrace project is organized into several files and directories, promoting modularity and separation of concerns:
 
-Using Lazarus is generally the recommended approach for building and developing LCL-based applications like ETrace, as it automates many configuration details required for the GUI components and external libraries.
+*   `etracer.lpr`: The main project file for the Lazarus IDE. It defines the program entry point (`begin ... end.`) and lists the primary units used directly by the application's main program, specifically the LCL interface units and the main form unit (`et_Main`).
+*   `README.md`: The top-level README file (this documentation).
+*   `src/`: This directory contains the core Pascal units (`.pas`) and the Lazarus form definition files (`.lfm`).
+    *   `src/et_global.pas`: Defines global constants, enumerations (`TDataType`, `TTopoType`, `TAnalyzerType`, `TNormIntensType`, `TProjection`, `TStepDir`), fundamental record types (`TVector3`, `TRay`, `TSimParams`), and global variables (`etError`, `SimParams`). It establishes the basic data structures and global state for the simulation.
+    *   `src/et_math.pas`: Contains mathematical functions and vector operations (`TVector3` and `TRay` operators and functions) essential for 3D geometry and physics calculations. This includes coordinate conversions (Cartesian, Spherical, Cylindrical) and geometric intersection routines (`rayXplane`, `rayXcyl`). It also provides functions for solving quadratic equations and generating random numbers with specific distributions (`Random_Gauss`, `Random_Cos`).
+    *   `src/et_objects.pas`: Defines the main object-oriented components of the simulation: `TElectron` (record), `TAugerElectron` (record), `TElectronSource` (class for beam generation), `TAnalyzer` (class for electron detection), `TMaterialParams` (class for material properties data storage), `TMaterialsList` (class for managing material parameters), `TMaterial` (class for material properties and interaction calculations), and the `TSample` class hierarchy (`TSample` - abstract base, `TContactHole`, `TStripe`, `TStep` - concrete geometries). This unit encapsulates the physics models and geometric definitions.
+    *   `src/et_sim.pas`: Implements the core simulation engine logic within the `TSimulation` class. It orchestrates the Monte Carlo tracing of electron trajectories (`CalcTrajectory`, `TraceElectron`), manages the interaction loop, handles material changes based on position, and uses the `TAnalyzer` and `TSample` objects. It defines `TTrajectoryPoint` (record) and `TTrajectory` (array of points) for storing path data and defines event handler types (`TCancelEvent`, `TDetectionEvent`, `TTrajectoryCompleteEvent`).
+    *   `src/et_main.pas`: The main form unit. It defines the `TMainForm` class, which manages the graphical user interface (GUI) defined in `et_main.lfm`. It contains the event handlers for all GUI controls (buttons, spin edits, combo boxes, etc.), reads simulation parameters from the GUI (`GUIToParams`), initializes and runs the `TSimulation` object (`RunSimulation`), handles simulation progress and events, and updates the GUI with results (summary, emission points list and chart, trajectory chart). It also handles saving and loading parameters and GUI settings (`LoadParamsFromCfg`, `SaveParamsToCfg`, `ReadIni`, `WriteIni`).
+    *   `src/et_main.lfm`: The Lazarus Form file defining the visual layout, properties, and event handler assignments for the `TMainForm` GUI. This is a non-human-readable text representation generated by the Lazarus IDE.
+    *   `src/et_params.pas`: A unit that appears to be related to simulation parameters, defining some global variables (`MaxEl`, `TraceName`, `EmPtFName`, etc.) and some unused constants. Based on the provided source, parameter management and configuration file handling are primarily done in `et_main.pas` using the `TSimParams` record and INI files. This unit's role in the currently provided code is minimal or vestigial.
+*   `unit_tests/`: This directory contains the unit tests for the project, using the fpcunit testing framework.
+    *   `unit_tests/et_tests.lpr`: The main project file for compiling and running the unit tests, likely using a GUI test runner (`TGuiTestRunner`).
+    *   `unit_tests/etmathtests.pas`: Contains specific unit tests for the mathematical functions implemented in `et_math.pas`, such as vector operations and intersection calculations (`TestVectorMath`, `TestIntersection_RayPlane`).
+    *   `unit_tests/etsampletests.pas`: Contains unit tests for the sample geometry intersection logic implemented in the `TSample` derived classes, specifically testing `Intersection` for `TContactHole` (`TestIntersection_ContactHole`) and `TStripe` (`TestIntersection_Stripe`).
 
-By following these steps, you should be able to build the ETrace application from the source code using the Free Pascal Compiler, either via the command line or the Lazarus IDE.
-
-### Mathematical Utilities (`et_math.pas`)
-
-This unit provides a collection of mathematical constants, functions, and vector/ray operations necessary for the 3D simulations.
-
-*   **Constants**: Defines common mathematical constants like `FloatEps`, `Pi_2`, `TwoPi`, `FourPi`, `OneThird`, `TwoThirds`. `FloatEps` is likely used for floating-point comparisons with a tolerance.
-*   **Comparison Functions**: Functions for comparing floating-point numbers with a tolerance (`Tol`):
-    *   `Between(x, lo, hi, Tol)`: Checks if `x` is strictly between `lo` and `hi`.
-    *   `BetweenIncl(x, lo, hi, Tol)`: Checks if `x` is between `lo` and `hi` inclusive.
-    *   `Equal(x, y, Tol)`: Checks if `x` is approximately equal to `y`.
-    *   `GreaterEqual(x, y, tol)`, `GreaterThan(x, y, tol)`: Checks for greater than/equal or greater than relationships with tolerance.
-    *   `LessEqual(x, y, tol)`, `LessThan(x, y, tol)`: Checks for less than/equal or less than relationships with tolerance.
-    *   `Zero(x, Tol)`: Checks if `x` is approximately zero.
-*   **Random Number Functions**:
-    *   `Random_Gauss`: Returns a random number from a Gaussian (normal) distribution, likely used for simulating beam profile or scattering angles.
-    *   `Random_Cos`: Returns a random number distributed according to a cosine function, possibly used for simulating directional distributions (e.g., of emitted electrons).
-*   **Quadratic Solver**:
-    *   `SqrSolve(p, q, var x1, x2)`: Solves the reduced quadratic equation `x^2 + p*x + q = 0`.
-    *   `SqrSolve(a, b, c, var x1, x2)`: Solves the standard quadratic equation `a*x^2 + b*x + c = 0`. These are essential for calculating intersection points with quadratic surfaces like cylinders.
-*   **Utility Procedures**:
-    *   `SwapFloat(var x, y)`: Swaps the values of two float variables.
-*   **Vector3 Functions and Operators**: These operate on the `TVector3` record type.
-    *   `Vector3(x, y, z)`: Creates a `TVector3` from components.
-    *   `EmptyVector3`: Returns a zero vector (0, 0, 0).
-    *   `ValidVector(V)`: Checks if a vector contains valid (not NaN or Infinity) float values, useful for checking calculation results.
-    *   `DotProduct(const A, B)`: Calculates the dot product of two vectors (`A.X*B.X + A.Y*B.Y + A.Z*B.Z`), used for angle calculations and projections.
-    *   `CrossProduct(const A, B)`: Calculates the cross product of two vectors, yielding a vector perpendicular to both A and B. Useful for finding surface normals or rotation axes.
-    *   `VecLength(const A)`: Calculates the magnitude (length) of a vector (`sqrt(A.X^2 + A.Y^2 + A.Z^2)`).
-    *   `VecNormalize(const A)` / `VecNormalize(X, Y, Z)`: Returns a normalized version of a vector (a unit vector with length 1) by dividing by its length. Crucial for representing directions.
-    *   `VecAngle(const A, B)`: Calculates the angle between two vectors using the dot product and arc cosine.
-    *   `VecRotate(const V, A, phi)`: Rotates vector `V` around axis `A` by angle `phi`.
-    *   `Rotate(var V: TVector3; A: TVector3; Cos_phi,Sin_phi: Float)`: Rotates vector `V` around axis `A` using pre-calculated cosine and sine of the angle `phi`. This is a performance optimization.
-    *   `VecRotateY(const V, phi)`: Rotates vector `V` specifically around the Y-axis by angle `phi`.
-    *   `Distance(const A, B)`: Calculates the Euclidean distance between two points represented by vectors (`VecLength(A - B)`).
-    *   Operators `+`, `-`, `*`: Overloaded standard operators for vector addition (`A + B`), subtraction (`A - B`), negation (`-A`), and scalar multiplication (`A * x` or `x * A`). These allow for intuitive vector arithmetic.
-*   **Ray-Object Intersection Functions**:
-    *   `rayXplane(ray: TRay; Plane: TRay; var Point: TVector3)`: Calculates the intersection point of a ray with an infinite plane. The plane is defined by a point on the plane (`Plane.Point`) and its normal vector (`Plane.Dir`). Returns the parameter `t` such that `ray.Point + t * ray.Dir` is the intersection point. If no intersection or the ray is parallel to the plane, it likely returns a specific value (e.g., a very large number or -1).
-    *   `rayXcyl(ray: TRay; r: float; var Point:TVector3; FarPoint: boolean)`: Calculates the intersection point of a ray with a cylinder of radius `r`. The axis of the cylinder is implicitly the Z-axis in this context (as often seen in surface analysis geometries). `FarPoint` likely determines whether the function returns the intersection point closest to the ray's origin (`false`) or the farther one (`true`). Returns the parameter `t` along the ray.
-*   **Coordinate Transformation Functions**:
-    *   `CartToSph(x, y, z, var theta, phi)`: Converts Cartesian coordinates (x, y, z) to standard spherical coordinates (theta - polar angle, typically from Z-axis; phi - azimuthal angle, typically in XY plane from X-axis).
-    *   `SphToCart(theta, phi, var x, y, z)` / `SphToCart(Cos_theta, Sin_theta, Cos_phi, Sin_phi, var x, y, z)`: Converts spherical coordinates back to Cartesian coordinates. The second version using pre-calculated sines/cosines is a performance optimization.
-    *   `CartToCyl(x, y, var rho, phi)`: Converts Cartesian coordinates (x, y) in the XY plane to polar coordinates (rho - radial distance from origin, phi - azimuthal angle).
-    *   `CylToCart(rho, phi, var x, y)`: Converts polar coordinates (rho, phi) in the XY plane back to Cartesian coordinates (x, y).
-
-This unit provides the comprehensive set of geometric and numerical capabilities required by the simulation engine and sample objects to perform 3D tracing and interaction calculations.
-
-### Parameter Handling (`et_params.pas`)
-
-This unit focuses on managing simulation parameters, particularly loading them from a configuration file.
-
-*   **`CfgName`**: A global string constant defining a default configuration file name: `'CALC_ET.CFG'`. Note that `et_global.pas` defines `CFG_FILE_NAME = 'etracer.cfg'`. Based on the `et_main.pas` interface, `etracer.cfg` appears to be the primary configuration file used by the GUI (`TMainForm`) for loading and saving parameters via `LoadParamsFromCfg`/`SaveParamsFromCfg` and the `TIniFile` component. The exact role of `CALC_ET.CFG` is less clear from the provided interfaces alone and might be used in a different context (e.g., an older command-line version or internal process) or might be a remnant. It is recommended to clarify this if full source code is available.
-*   **Global Variables**: This unit declares several global variables, likely intended to hold parameters and simulation state, potentially loaded from the configuration file or updated during execution. Some overlap conceptually with fields in `TSimParams` or `TMainForm`, suggesting different purposes or historical use.
-    *   `MaxEl`: Integer, likely the maximum number of electrons to simulate (default 100). This might be related to `TSimParams.NumElectrons` or `TSimulation.FMaxPrimElectrons`.
-    *   `TraceName`, `EmPtFName`: Strings, possibly file names for output files where trajectories are saved (`TraceName`) and where emission points are saved (`EmPtFName`).
-    *   `TopInt`, `WallInt`, `BotInt`: Floats, potentially storing integrated Auger electron intensity values for different defined areas of the sample surface (e.g., the top flat surface, side walls of a hole/stripe, the bottom of a hole). These might be updated during simulation and displayed in the GUI summary.
-    *   `EmPoints`: Declared as `TMatrix`, but the definition of `TMatrix` is not present in the provided interfaces. Based on its name and context with `EmPtFName` and the `FEmissionPoints` array in `TMainForm`, it is likely intended to be a data structure (possibly from an external graphics or matrix library, or an internal internal array type not fully described) to store the coordinates of detected Auger electron emission points. This variable might be related to or potentially superseded by the `FEmissionPoints: array of TVector3` used in `TMainForm` for charting.
-    *   `nDet`, `nDetOld`: Integers, counters for detected Auger electrons. `nDet` is likely the current count during a simulation run, and `nDetOld` might represent a count from a previously loaded emission points file (`EmPtFName`).
-    *   `nPrim`: Integer, counter for the number of primary electrons simulated in the current run. This is likely linked to `TSimulation.FNumPrimElectrons`.
-    *   `StartTime`: `TDateTime`, records the simulation start time, used for calculating simulation duration.
-    *   (Commented-out variables like `SetStart`, `Graphik`, `HorRange`, `VertRange`, `Projection`, `PlotColor`, `GrBkColor`, `GrColor`, `BeepOn` suggest features that were removed, are part of an alternative command-line interface, or were intended for different plotting capabilities than the current `TAChart` implementation in `et_main.pas`).
-*   **`CreateIni(ACfgFile: String)`**: Function that likely creates and returns a `TCustomIniFile` object (or a descendant like `TIniFile`) initialized to work with the specified configuration file name (`ACfgFile`). This object provides standard methods (like `ReadString`, `WriteInteger`, etc.) to interact with data stored in the INI file format (`[Section] Key=Value`).
-*   **`ReadParamsFromCfg(ACfgFile: String)`**: Procedure that reads simulation parameters from the specified configuration file (`ACfgFile`) using an INI file reader (`TCustomIniFile`) and populates some of the global variables declared in `et_params.pas` (e.g., `MaxEl`, `TraceName`, `EmPtFName`). Note that the `et_main.pas` unit has its own `LoadParamsFromCfg` and `SaveParamsFromCfg` procedures which directly interact with the `TSimParams` record and GUI controls, suggesting the primary parameter loading/saving logic for the GUI is handled there, possibly using `et_params.pas` helper functions or the `IniFiles` unit directly.
-
-While this unit provides functions for basic INI file handling and defines some global state variables, the main GUI's comprehensive parameter management appears to be primarily centered around the `TSimParams` record in `et_global.pas` and the dedicated `LoadParamsFromCfg`/`SaveParamsFromCfg` methods within `et_main.pas`.
-
-### Main Application Form (`et_main.pas`)
-
-This unit contains the definition of the main application window, `TMainForm`, which serves as the graphical user interface (GUI) for the ETrace project. It integrates the simulation logic from other units and provides controls for setting parameters, running simulations, and visualizing results.
-
-*   **`TMainForm`**: The main form class, inheriting from `TForm` (part of LCL). It contains various visual components (from LCL and TAChart libraries) and methods to manage user interaction and simulation execution.
-    *   **Visual Components**: The interface lists numerous components (`TButton`, `TCheckBox`, `TComboBox`, `TFloatSpinEdit`, `TSpinEdit`, `TPanel`, `TGroupBox`, `TLabel`, `TRadioGroup`, `TProgressBar`, `TMemo`, `TPageControl`, `TSpeedButton`, `TChart`, `TLineSeries`, `TUserDefinedChartSource`). These components form the layout of the main window and allow the user to input values for the `TSimParams` record, initiate actions, monitor simulation progress, and view visual outputs like charts and text logs.
-    *   **Event Handlers**: Numerous procedures associated with specific component events (e.g., `btnRunSimClick` for button clicks, `cmbAnalyzerTypeChange` for combo box selection changes, `FormCreate` for form initialization, `rgProjectionClick` for radio group selection). These methods contain the logic that is executed in response to user interactions or form lifecycle events.
-    *   **Private Fields**: These fields store data managed by the form, often related to the simulation state and results being prepared for display.
-        *   `FEmissionPoints`: An array of `TVector3`. This dynamic array stores the calculated 3D coordinates on the sample surface where detected Auger electrons originated. This data is used to populate the `EmissionPointsChart` via the `EmissionPointsSource`.
-        *   `FTrajectories`: An array of `TTrajectory` (where `TTrajectory` is an array of `TTrajectoryPoint` defined in `et_sim.pas`). This array stores the sequences of points representing the paths taken by simulated electrons, used for visualization on the `TrajectoriesChart`.
-        *   `FSampleHitPoint`: `TVector3`. Stores the initial impact point of the primary electron beam on the sample surface, potentially for display or reference.
-        *   `FRunning`, `FAborted`: Boolean flags indicating the current simulation state (`FRunning` is true if a simulation is active, `FAborted` is true if the user requested cancellation). Used to control GUI element state (`UpdateCtrlState`) and simulation flow (`CancelHandler`).
-        *   `FActivated`: Boolean flag, likely used to track whether the form's `OnActivate` event has fired, which can be useful for initial setup routines that should only run once the form is fully displayed.
-    *   **Private Procedures**: These methods encapsulate the internal logic of the form, including data transfer, setup, execution control, and result display.
-        *   `DisplaySummary(ASimulation)`: Takes a `TSimulation` object and formats key results (like detection counts, simulation parameters, timing) into a human-readable string to be displayed in the `SummaryMemo`.
-        *   `GetProjection`: Reads the state of the `rgProjection` radio group and returns the corresponding `TProjection` enumeration value (e.g., `XYproj`, `ThreeD`) to control how trajectory data is displayed.
-        *   `GetSelectedAnalyzer`, `GetSelectedTopography`: Reads the selected item in the respective `TComboBox` controls and returns the corresponding enumeration value (`TAnalyzerType`, `TTopoType`).
-        *   `GUIToParams(var AParams)`: Populates a `TSimParams` record with the values currently set in the various GUI controls (spin edits, combo boxes, checkboxes, radio group). This function is called before starting a simulation to gather all user-defined parameters.
-        *   `InitMaterial(AMaterials, AName)`: A helper procedure used during initialization to find or create a `TMaterial` object based on a material name from a provided list (`TMaterialsList`). This is likely used to set up the `Substrate` and `Layer` materials for the sample.
-        *   `LoadParamsFromCfg`, `SaveParamsFromCfg`: Procedures to handle loading and saving the entire set of simulation parameters (likely stored in a `TSimParams` record) from/to the `etracer.cfg` configuration file using the `TIniFile` component.
-        *   `ParamsToGUI(const AParams)`: The inverse of `GUIToParams`. It takes a `TSimParams` record (e.g., loaded from a config file) and updates all the relevant GUI controls to reflect these parameter values.
-        *   `PopulateMaterialsCombo(ACombobox)`: Fills a given `TCombobox` component (used for selecting substrate and layer materials) with the names of available materials by querying the `TMaterialsList`.
-        *   `PrepareSim`: Performs necessary setup steps before a simulation run is initiated. This might include clearing previous results, initializing variables, and creating the `TSimulation` object but not starting its execution.
-        *   `RunSimulation`: This is the core procedure triggered by the "Run Simulation" button. It calls `PrepareSim`, gathers parameters from the GUI using `GUIToParams`, creates and configures the `TSimulation` instance, sets up the event handlers (`OnCancel`, `OnDetection`, `OnTrajectoryComplete`) to point to methods within `TMainForm`, and finally calls `TSimulation.Execute`, managing the process to allow the GUI to remain responsive.
-        *   `UpdateCtrlState(AEnabled)`: A utility procedure to enable or disable groups of GUI controls, preventing the user from changing parameters or starting a new simulation while one is already running.
-        *   `ReadIni`, `WriteIni`: Helper procedures, possibly separate from the main simulation parameter handling, used for loading/saving general application settings (e.g., window size, position, last used directory) using INI files.
-        *   **Event Handlers for `TSimulation`**: These methods are callback procedures assigned to the event properties (`OnCancel`, `OnDetection`, `OnTrajectoryComplete`) of the `TSimulation` object. The simulation engine calls these methods during its execution to report status and results back to the GUI thread.
-            *   `CancelHandler(ASimulation, var Cancel)`: This method is called periodically by the simulation engine to check if it should stop. It sets the `Cancel` parameter to `True` if the user has somehow signaled cancellation via the GUI (e.g., by clicking a "Cancel" button, implicitly setting the `FAborted` flag).
-            *   `DetectionHandler(ASimulation, AElectronCount, const Electron)`: Called by `TSimulation` whenever an Auger electron is successfully detected by the simulated analyzer. It receives the total count of detected electrons so far and the details of the newly detected `TAugerElectron`. This method is responsible for updating detection counters (`nDet`) and storing the electron's emission point (`Electron.Ray.Point`) in the `FEmissionPoints` array.
-            *   `TrajectoryCompleteHandler(Simulation, const AElectronID, const ATrajectory)`: Called by `TSimulation` after tracing the complete path of a primary or secondary electron. It receives a unique identifier for the electron and the `TTrajectory` data (an array of `TTrajectoryPoint`). This method stores the completed trajectory data in the `FTrajectories` array for subsequent visualization on the `TrajectoriesChart`.
-
-In summary, `et_main.pas` is the primary interface unit. It provides the visual controls for setting parameters, implements the logic to initiate and monitor simulations using the `TSimulation` class, and handles the display of results via charts and text memos, utilizing event handlers to receive updates from the simulation engine.
-
-## Unit Tests
-
-The project includes unit tests to verify the correctness of key functionalities, particularly in the mathematical calculations and sample geometry intersection logic. These tests are written using the Free Pascal Unit (FPCUnit) testing framework. Running these tests helps ensure the core physics and geometry calculations are performed correctly.
-
-*   **`unit_tests/etmathtests.pas`**: This unit contains test cases specifically designed to verify the mathematical functions and vector operations defined in the `et_math.pas` unit.
-    *   `TMathTests = class(TTestCase)`: This is the test case class that groups related math tests. It inherits from `TTestCase` provided by FPCUnit.
-    *   `procedure TestVectorMath;`: This published method likely tests the vector arithmetic operators (`+`, `-`, `*`) and key functions like `DotProduct`, `CrossProduct`, `VecLength`, `VecNormalize`, and `VecAngle` with various input vectors to ensure they produce the correct results.
-    *   `procedure TestIntersection_RayPlane;`: This published method tests the `rayXplane` function from `et_math.pas`. It likely sets up various scenarios with different ray origins, directions, and plane definitions (via `Plane: TRay`) and verifies that the calculated intersection point (`Point: TVector3`) and distance (`Float` return value) are correct for intersecting, parallel, and non-intersecting cases.
-*   **`unit_tests/etsampletests.pas`**: This unit contains test cases focused on verifying the intersection calculations for the concrete sample geometry classes defined in `et_objects.pas`.
-    *   `TSampleTests = class(TTestCase)`: The test case class for sample geometry intersection tests, inheriting from `TTestCase`.
-    *   `protected FSubstrate: TMaterial; FLayer: TMaterial;`: These protected fields likely store material objects (`TMaterial`) that are used in the tests to create sample instances.
-    *   `procedure Setup; override;`: This procedure is automatically called by the FPCUnit test runner before each test method in the class is executed. It is used here to perform common initialization, such as creating and configuring the `FSubstrate` and `FLayer` material objects using parameters from `TMaterialParams` or similar.
-    *   `procedure TearDown; override; override;`: This procedure is automatically called by the FPCUnit test runner after each test method completes. It's used for cleanup, such as freeing the `FSubstrate` and `FLayer` objects created in `Setup`.
-    *   `procedure TestIntersection_ContactHole;`: This published method tests the `Intersection` method of the `TContactHole` class. It involves creating `TContactHole` instances with specific dimensions, setting up various rays originating from inside or outside the hole geometry, and verifying that the `Intersection` method correctly identifies whether an intersection occurs and calculates the accurate 3D intersection point (`Point: TVector3`) and distance along the ray.
-    *   `procedure TestIntersection_Stripe;`: This published method tests the `Intersection` method of the `TStripe` class similarly to the `ContactHole` test. It verifies that the method correctly handles ray intersections with the rectangular stripe geometry for different ray paths and origins.
-
-These unit tests are crucial for validating the correctness of the core geometric and mathematical routines that underpin the simulation. Running these tests using the FPCUnit test runner (a separate executable typically built from the `fpcunit.lpr` project or a simple test runner program) is highly recommended after any changes to the `et_math.pas` or `et_objects.pas` units to ensure that functionality remains correct and to catch bugs early.
-
-## Conclusion and Further Steps
-
-ETrace offers a robust and modular framework for simulating complex electron scattering and Auger emission processes in materials with various topographies, making it a valuable tool for research, development, and education in the field of surface analysis and electron microscopy. The separation of the core simulation logic from the GUI allows for potential extensions and adaptations, such as developing a command-line interface or integrating the simulation engine into other software.
-
-**To explore further and contribute:**
-
-*   Examine the full source code implementation (`.pas` files beyond the provided interfaces) to gain a deeper understanding of the detailed algorithms and logic within the methods and procedures described, particularly the implementation details of `TSimulation.CalcTrajectory` and the specific physics models used for scattering and stopping power in the `TMaterial` class.
-*   Compile the project using the instructions provided in the "Building the Project" section. Start with command-line compilation to understand the process, and consider using the Lazarus IDE for development and easier management of dependencies and the GUI.
-*   Run the application and experiment with different simulation parameters and sample geometries via the GUI to observe the effects on electron trajectories and signal generation in practice. Refer to the "How to Use ETrace" section.
-*   Run the unit tests (`unit_tests/etmathtests.pas`, `unit_tests/etsampletests.pas`) using the FPCUnit test runner to verify the integrity of the core mathematical and geometric calculations. This is a crucial step before making modifications.
-*   Study the relationship and data flow between the `TSimParams` record (defining simulation inputs), the GUI controls in `et_main.pas` (gathering user input), the configuration file (`etracer.cfg`), and how these parameters are used to instantiate and configure the `TSimulation`, `TElectronSource`, `TSample`, and `TAnalyzer` objects.
-*   Consider contributing to the project by adding new features, such as implementing additional sample geometries (requiring a new class inheriting from `TSample` and implementing its abstract methods), incorporating more advanced physics models for electron-solid interactions, implementing different types of electron analyzers, enhancing the user interface, adding new visualization options, or developing a command-line interface. The existing structure provides a solid foundation for such extensions.
-
-ETrace stands as a powerful and flexible tool for researchers and developers in electron spectroscopy and microscopy. We hope this documentation serves as a comprehensive and helpful guide for building, understanding the inner workings of, using, and potentially contributing to the project.
+This structure promotes modularity and separation of concerns, with global definitions, mathematical utilities, physical objects, simulation logic, and the user interface residing in distinct units.

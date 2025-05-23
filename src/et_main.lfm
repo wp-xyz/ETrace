@@ -6,19 +6,19 @@ object MainForm: TMainForm
   Caption = 'Electron Tracer'
   ClientHeight = 636
   ClientWidth = 992
+  LCLVersion = '4.99.0.0'
   OnActivate = FormActivate
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  LCLVersion = '3.99.0.0'
   object ResultsPageControl: TPageControl
     Left = 261
     Height = 612
     Top = 12
     Width = 719
-    ActivePage = pgEmissionPoints
+    ActivePage = pgTrajectories
     Align = alClient
     BorderSpacing.Around = 12
-    TabIndex = 1
+    TabIndex = 2
     TabOrder = 0
     object pgSummary: TTabSheet
       Caption = 'Summary'
@@ -132,9 +132,9 @@ object MainForm: TMainForm
               Anchors = [akLeft, akBottom]
               BorderSpacing.Bottom = 4
               Constraints.MinWidth = 64
-              OnChange = EmissionPointsChartExtentChange
               TabOrder = 1
               Value = -5
+              OnChange = EmissionPointsChartExtentChange
             end
             object seEmissionPointsHorMax: TFloatSpinEdit
               AnchorSideRight.Control = EmissionPointsChart
@@ -150,9 +150,9 @@ object MainForm: TMainForm
               BorderSpacing.Right = 4
               BorderSpacing.Bottom = 4
               Constraints.MinWidth = 64
-              OnChange = EmissionPointsChartExtentChange
               TabOrder = 2
               Value = 5
+              OnChange = EmissionPointsChartExtentChange
             end
           end
         end
@@ -220,9 +220,9 @@ object MainForm: TMainForm
             'X-Z plane'
             'Y-Z plane'
           )
-          OnClick = rgProjectionClick
           ParentBackground = False
           TabOrder = 0
+          OnClick = rgProjectionClick
         end
         object seTrajectories: TSpinEdit
           AnchorSideLeft.Control = TrajectoryOptionsPanel
@@ -251,7 +251,7 @@ object MainForm: TMainForm
           Left = 6
           Height = 15
           Top = 111
-          Width = 85
+          Width = 86
           BorderSpacing.Top = 8
           Caption = 'Trajectory count'
         end
@@ -321,9 +321,9 @@ object MainForm: TMainForm
           Alignment = taRightJustify
           Anchors = [akLeft, akBottom]
           Constraints.MinWidth = 64
-          OnChange = TrajectoriesChartExtentChange
           TabOrder = 1
           Value = -5
+          OnChange = TrajectoriesChartExtentChange
         end
         object seTrajectoryHorMax: TFloatSpinEdit
           AnchorSideRight.Control = TrajectoryChartPanel
@@ -337,9 +337,9 @@ object MainForm: TMainForm
           Alignment = taRightJustify
           Anchors = [akRight, akBottom]
           Constraints.MinWidth = 64
-          OnChange = TrajectoriesChartExtentChange
           TabOrder = 2
           Value = 5
+          OnChange = TrajectoriesChartExtentChange
         end
       end
     end
@@ -556,7 +556,7 @@ object MainForm: TMainForm
         Left = 16
         Height = 15
         Top = 4
-        Width = 24
+        Width = 25
         BorderSpacing.Left = 16
         Caption = 'Type'
       end
@@ -578,10 +578,10 @@ object MainForm: TMainForm
           'CMA'
           'CHA'
         )
-        OnChange = cmbAnalyzerTypeChange
         Style = csDropDownList
         TabOrder = 0
         Text = 'CMA'
+        OnChange = cmbAnalyzerTypeChange
       end
       object cbUseHoeslerAp: TCheckBox
         AnchorSideLeft.Control = lblAnalyzerType
@@ -606,8 +606,8 @@ object MainForm: TMainForm
         Width = 107
         BorderSpacing.Top = 4
         Caption = 'Annular aperture'
-        OnChange = cbAnnularApertureChange
         TabOrder = 2
+        OnChange = cbAnnularApertureChange
       end
       object lblFrom: TLabel
         AnchorSideTop.Control = seSectorFrom
@@ -687,8 +687,8 @@ object MainForm: TMainForm
       AutoSize = True
       BorderSpacing.Top = 8
       Caption = 'Run simulation'
-      OnClick = btnRunSimClick
       TabOrder = 2
+      OnClick = btnRunSimClick
     end
     object gbSample: TGroupBox
       Left = 0
@@ -709,7 +709,7 @@ object MainForm: TMainForm
         Left = 16
         Height = 15
         Top = 112
-        Width = 63
+        Width = 64
         Caption = 'Topography'
       end
       object cmbTopography: TComboBox
@@ -732,10 +732,10 @@ object MainForm: TMainForm
           'Stripe'
           'Step'
         )
-        OnChange = cmbTopographyChange
         Style = csDropDownList
         TabOrder = 0
         Text = 'Contact hole'
+        OnChange = cmbTopographyChange
       end
       object lblSubstrate: TLabel
         AnchorSideLeft.Control = gbSample
@@ -938,7 +938,7 @@ object MainForm: TMainForm
         Left = 16
         Height = 15
         Top = 4
-        Width = 79
+        Width = 80
         Caption = 'Tilt angle (deg)'
       end
       object seTiltAngle: TFloatSpinEdit

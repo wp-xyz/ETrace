@@ -4,14 +4,13 @@ program ETracer;
 
 uses
   {$IFDEF UNIX}
-  cthreads,
+  cthreads, clocale,
   {$ENDIF}
   {$IFDEF HASAMIGA}
   athreads,
   {$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, tachartlazaruspkg, lazcontrols, et_Main, et_math, et_Global,
-  et_Objects, et_Sim;
+  Forms, et_Main; //, et_math, et_Global, et_Objects, et_Sim;
 
 {$R *.res}
 

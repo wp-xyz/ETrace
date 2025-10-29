@@ -15,10 +15,10 @@ object MainForm: TMainForm
     Height = 612
     Top = 12
     Width = 719
-    ActivePage = pgTrajectories
+    ActivePage = pgEmissionPoints
     Align = alClient
     BorderSpacing.Around = 12
-    TabIndex = 2
+    TabIndex = 1
     TabOrder = 0
     object pgSummary: TTabSheet
       Caption = 'Summary'
@@ -45,28 +45,29 @@ object MainForm: TMainForm
       ClientHeight = 584
       ClientWidth = 711
       object EmissionPointsPageControl: TPageControl
-        Left = 0
-        Height = 584
-        Top = 0
-        Width = 711
+        Left = 4
+        Height = 576
+        Top = 4
+        Width = 703
         ActivePage = pgPlot
         Align = alClient
+        BorderSpacing.Around = 4
         TabIndex = 0
         TabOrder = 0
         object pgPlot: TTabSheet
           Caption = 'Plot'
-          ClientHeight = 556
-          ClientWidth = 703
+          ClientHeight = 548
+          ClientWidth = 695
           object Panel1: TPanel
             Left = 6
-            Height = 544
+            Height = 536
             Top = 6
-            Width = 691
+            Width = 683
             Align = alClient
             BorderSpacing.Around = 6
             BevelOuter = bvNone
-            ClientHeight = 544
-            ClientWidth = 691
+            ClientHeight = 536
+            ClientWidth = 683
             Color = clWindow
             ParentBackground = False
             ParentColor = False
@@ -78,9 +79,9 @@ object MainForm: TMainForm
               AnchorSideRight.Side = asrBottom
               AnchorSideBottom.Control = seEmissionPointsHorMin
               Left = 0
-              Height = 517
+              Height = 509
               Top = 0
-              Width = 691
+              Width = 683
               AxisList = <              
                 item
                   Grid.Color = clSilver
@@ -126,7 +127,7 @@ object MainForm: TMainForm
               AnchorSideBottom.Side = asrBottom
               Left = 0
               Height = 23
-              Top = 517
+              Top = 509
               Width = 64
               Alignment = taRightJustify
               Anchors = [akLeft, akBottom]
@@ -141,9 +142,9 @@ object MainForm: TMainForm
               AnchorSideRight.Side = asrBottom
               AnchorSideBottom.Control = Panel1
               AnchorSideBottom.Side = asrBottom
-              Left = 623
+              Left = 615
               Height = 23
-              Top = 517
+              Top = 509
               Width = 64
               Alignment = taRightJustify
               Anchors = [akRight, akBottom]
@@ -158,13 +159,13 @@ object MainForm: TMainForm
         end
         object pgValues: TTabSheet
           Caption = 'Values'
-          ClientHeight = 556
-          ClientWidth = 703
+          ClientHeight = 548
+          ClientWidth = 695
           object EmissionPointsMemo: TMemo
             Left = 6
-            Height = 544
+            Height = 536
             Top = 6
-            Width = 691
+            Width = 683
             Align = alClient
             BorderSpacing.Around = 6
             Font.Height = -12
@@ -358,13 +359,13 @@ object MainForm: TMainForm
     TabOrder = 1
     object gbEGun: TGroupBox
       Left = 0
-      Height = 178
+      Height = 186
       Top = 0
       Width = 237
       Align = alTop
       AutoSize = True
       Caption = 'Electron gun'
-      ClientHeight = 158
+      ClientHeight = 166
       ClientWidth = 233
       TabOrder = 0
       object lblPrimElCount: TLabel
@@ -522,6 +523,7 @@ object MainForm: TMainForm
         Alignment = taRightJustify
         Anchors = [akTop, akLeft, akRight]
         BorderSpacing.Top = 4
+        BorderSpacing.Bottom = 8
         Increment = 0.1
         MinValue = 0.1
         TabOrder = 5
@@ -540,7 +542,7 @@ object MainForm: TMainForm
     object gbAnalyzer: TGroupBox
       Left = 0
       Height = 122
-      Top = 190
+      Top = 198
       Width = 237
       Align = alTop
       AutoSize = True
@@ -679,21 +681,23 @@ object MainForm: TMainForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = ParamsPanel
       AnchorSideBottom.Side = asrBottom
-      Left = 131
+      Left = 129
       Height = 25
       Top = 587
-      Width = 106
+      Width = 108
       Anchors = [akRight, akBottom]
       AutoSize = True
       BorderSpacing.Top = 8
       Caption = 'Run simulation'
+      Font.Style = [fsBold]
+      ParentFont = False
       TabOrder = 2
       OnClick = btnRunSimClick
     end
     object gbSample: TGroupBox
       Left = 0
       Height = 239
-      Top = 324
+      Top = 332
       Width = 237
       Align = alTop
       AutoSize = True
@@ -966,7 +970,7 @@ object MainForm: TMainForm
       Left = 0
       Height = 20
       Top = 589
-      Width = 123
+      Width = 121
       Anchors = [akTop, akLeft, akRight]
       BorderSpacing.Right = 8
       TabOrder = 4
